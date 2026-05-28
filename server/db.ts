@@ -126,6 +126,40 @@ export async function sumMealsByDate(userId: number, mealDate: string) {
   return { calories, proteinG, fatG, carbsG, items: rows };
 }
 
+export async function listMealSummariesByMonth(userId: number, yearMonth: string) {
+  // yearMonth: "YYYY-MM"
+  const start = `${yearMonth}-01`;
+  // compute last day by going to next month and subtracting
+  const [y, m] = yearMonth.split("-").map(Number);
+  const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(meals)
+    .where(
+      and(
+        eq(meals.userId, userId),
+        gte(meals.mealDate, start),
+        lte(meals.mealDate, nextMonth.slice(0, 10))
+      )
+    );
+
+  // group by date
+  const map = new Map<string, { calories: number; proteinG: number; fatG: number; carbsG: number; count: number }>();
+  for (const r of rows) {
+    const d = r.mealDate as string;
+    const cur = map.get(d) ?? { calories: 0, proteinG: 0, fatG: 0, carbsG: 0, count: 0 };
+    cur.calories += Number(r.calories);
+    cur.proteinG += Number(r.proteinG);
+    cur.fatG += Number(r.fatG);
+    cur.carbsG += Number(r.carbsG);
+    cur.count += 1;
+    map.set(d, cur);
+  }
+
+  return Array.from(map.entries()).map(([date, totals]) => ({ date, ...totals }));
+}
+
 /* ============================== weights ============================== */
 
 export async function upsertWeight(userId: number, recordDate: string, weightKg: string, note?: string | null) {

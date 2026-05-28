@@ -9,6 +9,7 @@ import {
 import { getLoginUrl } from "@/const";
 import {
   Apple,
+  CalendarDays,
   CalendarHeart,
   Camera,
   Dumbbell,
@@ -27,6 +28,7 @@ import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 const NAV_ITEMS = [
   { path: "/", label: "ホーム", icon: Home },
   { path: "/meals", label: "食事", icon: Apple },
+  { path: "/calendar", label: "カレンダー", icon: CalendarDays },
   { path: "/weight", label: "体重", icon: CalendarHeart },
   { path: "/workouts", label: "運動", icon: Dumbbell },
   { path: "/coach", label: "AIコーチ", icon: Sparkles },

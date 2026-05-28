@@ -13,6 +13,7 @@ import Photos from "@/pages/Photos";
 import Settings from "@/pages/Settings";
 import Weight from "@/pages/Weight";
 import Workouts from "@/pages/Workouts";
+import CalendarView from "@/pages/CalendarView";
 import { Route, Switch } from "wouter";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/convenience" component={Convenience} />
       <Route path="/photos" component={Photos} />
       <Route path="/goal" component={Goal} />
+      <Route path="/calendar" component={CalendarView} />
       <Route path="/settings" component={Settings} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

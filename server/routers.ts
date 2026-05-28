@@ -64,6 +64,10 @@ export const appRouter = router({
       .input(z.object({ date: dateStringSchema }))
       .query(({ ctx, input }) => db.sumMealsByDate(ctx.user.id, input.date)),
 
+    monthlySummary: protectedProcedure
+      .input(z.object({ yearMonth: z.string().regex(/^\d{4}-\d{2}$/, "YYYY-MM形式で指定してください") }))
+      .query(({ ctx, input }) => db.listMealSummariesByMonth(ctx.user.id, input.yearMonth)),
+
     analyzePhoto: protectedProcedure
       .input(
         z.object({
