@@ -40,14 +40,12 @@ function Input({
       className={cn(
         // Base
         "w-full min-w-0 h-10 px-3.5 py-2 text-sm rounded-xl",
-        "bg-white/60 border border-border/60",
-        "text-foreground placeholder:text-muted-foreground/60",
-        "backdrop-blur-sm",
-        "shadow-[0_1px_2px_oklch(0.35_0.08_290/0.04),inset_0_1px_0_oklch(1_0_0/0.8)]",
+        "bg-input border border-border",
+        "text-foreground placeholder:text-muted-foreground/50",
         "transition-[border-color,box-shadow] duration-150 outline-none",
         // Focus
-        "focus:bg-white/80 focus:border-primary/50",
-        "focus:shadow-[0_1px_2px_oklch(0.35_0.08_290/0.06),0_0_0_3px_oklch(0.55_0.1_290/0.12),inset_0_1px_0_oklch(1_0_0/0.9)]",
+        "focus:border-primary/70",
+        "focus:shadow-[0_0_0_3px_oklch(0.62_0.18_220/0.15)]",
         // Disabled
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
         // File input

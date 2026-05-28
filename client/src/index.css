@@ -42,96 +42,98 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ─────────────────────────────────────────────
+   MyFitnessPal-style Design Tokens
+   Dark Navy / Steel Blue / Cyan-Green accent
+───────────────────────────────────────────── */
 :root {
-  /* ── Premium Palette ── */
-  /* Deep slate-violet primary for headings and CTAs */
-  --primary: oklch(0.38 0.09 290);
-  --primary-foreground: oklch(0.99 0.005 290);
+  /* Primary: Bright cyan-blue (MFP action color) */
+  --primary: oklch(0.62 0.18 220);
+  --primary-foreground: oklch(0.99 0 0);
 
-  /* Soft rose-blush secondary */
-  --secondary: oklch(0.94 0.03 340);
-  --secondary-foreground: oklch(0.38 0.09 290);
+  /* Secondary: Muted navy */
+  --secondary: oklch(0.28 0.06 240);
+  --secondary-foreground: oklch(0.85 0.02 220);
 
-  /* Barely-there lavender background */
-  --background: oklch(0.975 0.012 290);
-  --foreground: oklch(0.28 0.06 290);
+  /* Background: Deep navy */
+  --background: oklch(0.14 0.04 240);
+  --foreground: oklch(0.95 0.01 220);
 
-  /* Frosted glass cards */
-  --card: oklch(1 0 0 / 0.78);
-  --card-foreground: oklch(0.28 0.06 290);
+  /* Cards: Slightly lighter navy */
+  --card: oklch(0.20 0.05 240);
+  --card-foreground: oklch(0.95 0.01 220);
 
-  --popover: oklch(0.99 0.005 290);
-  --popover-foreground: oklch(0.28 0.06 290);
+  --popover: oklch(0.22 0.05 240);
+  --popover-foreground: oklch(0.95 0.01 220);
 
-  /* Muted mint */
-  --muted: oklch(0.955 0.018 165);
-  --muted-foreground: oklch(0.52 0.04 290);
+  /* Muted: Mid-navy for subtle elements */
+  --muted: oklch(0.24 0.04 240);
+  --muted-foreground: oklch(0.62 0.03 220);
 
-  /* Warm amber accent */
-  --accent: oklch(0.95 0.04 75);
-  --accent-foreground: oklch(0.35 0.07 290);
+  /* Accent: Green (calories remaining / success) */
+  --accent: oklch(0.72 0.18 155);
+  --accent-foreground: oklch(0.10 0.02 155);
 
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
 
-  /* Delicate borders */
-  --border: oklch(0.88 0.022 290 / 0.6);
-  --input: oklch(0.97 0.012 290);
-  --ring: oklch(0.55 0.1 290);
+  /* Borders: Subtle navy lines */
+  --border: oklch(0.30 0.04 240);
+  --input: oklch(0.22 0.05 240);
+  --ring: oklch(0.62 0.18 220);
 
-  /* Chart palette */
-  --chart-1: oklch(0.68 0.14 320);
-  --chart-2: oklch(0.72 0.13 165);
-  --chart-3: oklch(0.62 0.12 290);
-  --chart-4: oklch(0.78 0.1 75);
-  --chart-5: oklch(0.65 0.11 240);
+  /* Chart palette: MFP-style */
+  --chart-1: oklch(0.62 0.18 220);   /* blue — protein */
+  --chart-2: oklch(0.72 0.18 155);   /* green — carbs */
+  --chart-3: oklch(0.75 0.18 55);    /* yellow — fat */
+  --chart-4: oklch(0.65 0.22 25);    /* red — over */
+  --chart-5: oklch(0.68 0.14 290);   /* purple */
 
-  --radius: 0.875rem;
+  --radius: 0.75rem;
 
   /* Sidebar */
-  --sidebar: oklch(0.99 0.008 290 / 0.88);
-  --sidebar-foreground: oklch(0.28 0.06 290);
-  --sidebar-primary: oklch(0.38 0.09 290);
-  --sidebar-primary-foreground: oklch(0.99 0.005 290);
-  --sidebar-accent: oklch(0.955 0.018 165);
-  --sidebar-accent-foreground: oklch(0.28 0.06 290);
-  --sidebar-border: oklch(0.88 0.022 290 / 0.4);
-  --sidebar-ring: oklch(0.55 0.1 290);
+  --sidebar: oklch(0.17 0.04 240);
+  --sidebar-foreground: oklch(0.95 0.01 220);
+  --sidebar-primary: oklch(0.62 0.18 220);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.24 0.04 240);
+  --sidebar-accent-foreground: oklch(0.85 0.02 220);
+  --sidebar-border: oklch(0.30 0.04 240);
+  --sidebar-ring: oklch(0.62 0.18 220);
 }
 
+/* Dark mode = same as root (already dark) */
 .dark {
-  --primary: oklch(0.72 0.1 290);
-  --primary-foreground: oklch(0.14 0.005 290);
-  --sidebar-primary: oklch(0.72 0.1 290);
-  --sidebar-primary-foreground: oklch(0.14 0.005 290);
-  --background: oklch(0.14 0.008 290);
-  --foreground: oklch(0.88 0.008 290);
-  --card: oklch(0.19 0.008 290);
-  --card-foreground: oklch(0.88 0.008 290);
-  --popover: oklch(0.19 0.008 290);
-  --popover-foreground: oklch(0.88 0.008 290);
-  --secondary: oklch(0.24 0.008 290);
-  --secondary-foreground: oklch(0.72 0.008 290);
-  --muted: oklch(0.26 0.008 290);
-  --muted-foreground: oklch(0.62 0.015 290);
-  --accent: oklch(0.26 0.008 290);
-  --accent-foreground: oklch(0.92 0.005 290);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.55 0.12 290);
-  --chart-1: oklch(0.72 0.14 320);
-  --chart-2: oklch(0.72 0.13 165);
-  --chart-3: oklch(0.62 0.12 290);
-  --chart-4: oklch(0.78 0.1 75);
-  --chart-5: oklch(0.65 0.11 240);
-  --sidebar: oklch(0.19 0.008 290);
-  --sidebar-foreground: oklch(0.88 0.008 290);
-  --sidebar-accent: oklch(0.26 0.008 290);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.55 0.12 290);
+  --primary: oklch(0.62 0.18 220);
+  --primary-foreground: oklch(0.99 0 0);
+  --background: oklch(0.14 0.04 240);
+  --foreground: oklch(0.95 0.01 220);
+  --card: oklch(0.20 0.05 240);
+  --card-foreground: oklch(0.95 0.01 220);
+  --popover: oklch(0.22 0.05 240);
+  --popover-foreground: oklch(0.95 0.01 220);
+  --secondary: oklch(0.28 0.06 240);
+  --secondary-foreground: oklch(0.85 0.02 220);
+  --muted: oklch(0.24 0.04 240);
+  --muted-foreground: oklch(0.62 0.03 220);
+  --accent: oklch(0.72 0.18 155);
+  --accent-foreground: oklch(0.10 0.02 155);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.30 0.04 240);
+  --input: oklch(0.22 0.05 240);
+  --ring: oklch(0.62 0.18 220);
+  --chart-1: oklch(0.62 0.18 220);
+  --chart-2: oklch(0.72 0.18 155);
+  --chart-3: oklch(0.75 0.18 55);
+  --chart-4: oklch(0.65 0.22 25);
+  --chart-5: oklch(0.68 0.14 290);
+  --sidebar: oklch(0.17 0.04 240);
+  --sidebar-foreground: oklch(0.95 0.01 220);
+  --sidebar-accent: oklch(0.24 0.04 240);
+  --sidebar-accent-foreground: oklch(0.85 0.02 220);
+  --sidebar-border: oklch(0.30 0.04 240);
+  --sidebar-ring: oklch(0.62 0.18 220);
 }
 
 @layer base {
@@ -143,35 +145,30 @@
     font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Safe area support for iPhone notch / Dynamic Island */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   body {
-    @apply text-foreground;
-    /* Refined 3-tone pastel gradient — fixed so it doesn't scroll */
-    background:
-      radial-gradient(ellipse 80% 60% at 15% 0%,   oklch(0.93 0.05 320 / 0.75) 0%, transparent 60%),
-      radial-gradient(ellipse 70% 55% at 90% 10%,  oklch(0.93 0.05 75  / 0.65) 0%, transparent 60%),
-      radial-gradient(ellipse 65% 50% at 50% 100%, oklch(0.93 0.06 165 / 0.65) 0%, transparent 60%),
-      linear-gradient(160deg, oklch(0.975 0.018 320) 0%, oklch(0.975 0.018 75) 50%, oklch(0.975 0.022 165) 100%);
-    background-attachment: fixed;
+    @apply bg-background text-foreground;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /* ── Typography ── */
-  h1, h2, h3, .font-display {
-    font-family: 'Cormorant Garamond', 'Noto Serif JP', Georgia, serif;
-    letter-spacing: 0.015em;
-    color: oklch(0.35 0.08 290);
+  h1, h2, h3 {
+    font-family: 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+    font-weight: 700;
+    color: oklch(0.95 0.01 220);
+    letter-spacing: -0.01em;
   }
 
-  h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 600; line-height: 1.2; }
-  h2 { font-size: clamp(1.25rem, 3.5vw, 1.75rem); font-weight: 600; line-height: 1.3; }
-  h3 { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 500; line-height: 1.4; }
-
-  /* Wide-tracking label utility */
-  .tracking-wider-jp {
-    letter-spacing: 0.12em;
-  }
+  h1 { font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.2; }
+  h2 { font-size: clamp(1.125rem, 3.5vw, 1.5rem); line-height: 1.3; }
+  h3 { font-size: clamp(0.9375rem, 2.5vw, 1.125rem); line-height: 1.4; }
 
   /* Cursor helpers */
   button:not(:disabled),
@@ -205,49 +202,64 @@
 
   .flex { min-height: 0; min-width: 0; }
 
-  /* ── Premium Glass Card ── */
-  .glass-card {
-    background: oklch(1 0 0 / 0.72);
-    border: 1px solid oklch(1 0 0 / 0.8);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  /* ── MFP-style Card ── */
+  .mfp-card {
+    background: oklch(0.20 0.05 240);
+    border: 1px solid oklch(0.30 0.04 240);
     border-radius: var(--radius-lg);
-    box-shadow:
-      0 1px 2px oklch(0.35 0.08 290 / 0.04),
-      0 4px 12px oklch(0.35 0.08 290 / 0.06),
-      0 12px 32px oklch(0.35 0.08 290 / 0.04),
-      inset 0 1px 0 oklch(1 0 0 / 0.9);
+    box-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
   }
 
-  /* ── Elevated Card (for key metrics) ── */
-  .glass-card-elevated {
-    background: oklch(1 0 0 / 0.82);
-    border: 1px solid oklch(1 0 0 / 0.85);
-    backdrop-filter: blur(24px) saturate(1.5);
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
-    border-radius: var(--radius-xl);
-    box-shadow:
-      0 2px 4px oklch(0.35 0.08 290 / 0.06),
-      0 8px 24px oklch(0.35 0.08 290 / 0.08),
-      0 24px 48px oklch(0.35 0.08 290 / 0.06),
-      inset 0 1px 0 oklch(1 0 0 / 0.95);
-  }
-
-  /* ── Stat Pill ── */
-  .stat-pill {
-    background: oklch(0.97 0.015 290 / 0.6);
-    border: 1px solid oklch(0.88 0.022 290 / 0.4);
-    border-radius: var(--radius-md);
-    padding: 0.625rem 0.875rem;
-  }
-
-  /* ── Page Section Header ── */
-  .page-label {
+  /* ── Section Header Label ── */
+  .section-label {
     font-size: 0.6875rem;
-    letter-spacing: 0.16em;
+    font-weight: 600;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: oklch(0.52 0.04 290);
+    color: oklch(0.62 0.03 220);
     font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 500;
   }
+
+  /* ── Nutrient color helpers ── */
+  .nutrient-protein { color: oklch(0.62 0.18 220); }
+  .nutrient-fat     { color: oklch(0.75 0.18 55); }
+  .nutrient-carbs   { color: oklch(0.72 0.18 155); }
+  .nutrient-cal     { color: oklch(0.80 0.12 55); }
+
+  .bg-nutrient-protein { background: oklch(0.62 0.18 220); }
+  .bg-nutrient-fat     { background: oklch(0.75 0.18 55); }
+  .bg-nutrient-carbs   { background: oklch(0.72 0.18 155); }
+
+  /* ── Progress bar ── */
+  .progress-track {
+    background: oklch(0.28 0.04 240);
+    border-radius: 9999px;
+    overflow: hidden;
+    height: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* ── Tap target minimum (44px) ── */
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Input override for dark theme ── */
+  input, textarea, select {
+    color-scheme: dark;
+  }
+
+  /* Backward compat aliases */
+  .glass-card { @apply mfp-card; }
+  .glass-card-elevated { @apply mfp-card; }
+  .page-label { @apply section-label; }
+  .tracking-wider-jp { letter-spacing: 0.08em; }
 }

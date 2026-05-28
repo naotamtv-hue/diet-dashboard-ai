@@ -21,12 +21,14 @@ import { Camera, Loader2, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lu
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-const GLASS = {
-  background: "oklch(1 0 0 / 0.72)",
-  border: "1px solid oklch(1 0 0 / 0.78)",
-  backdropFilter: "blur(20px) saturate(1.4)",
-  WebkitBackdropFilter: "blur(20px) saturate(1.4)",
-  boxShadow: "0 1px 2px oklch(0.35 0.08 290 / 0.04), 0 4px 12px oklch(0.35 0.08 290 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.9)",
+const CARD = {
+  background: "oklch(0.20 0.05 240)",
+  border: "1px solid oklch(0.30 0.04 240)",
+} as const;
+
+const INNER = {
+  background: "oklch(0.24 0.04 240)",
+  border: "1px solid oklch(0.30 0.04 240)",
 } as const;
 
 type Analysis = {
@@ -64,16 +66,18 @@ function ConvenienceModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg w-full max-h-[85vh] flex flex-col gap-0 p-0 rounded-2xl overflow-hidden"
-        style={{ background: "oklch(0.98 0.01 290)", border: "1px solid oklch(0.9 0.02 290 / 0.5)" }}>
-        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/30 flex-shrink-0">
-          <DialogTitle className="font-display text-lg" style={{ color: "oklch(0.32 0.09 290)" }}>
+      <DialogContent
+        className="max-w-lg w-full max-h-[85vh] flex flex-col gap-0 p-0 rounded-2xl overflow-hidden"
+        style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+      >
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border flex-shrink-0">
+          <DialogTitle className="text-lg font-bold text-white">
             コンビニ商品から選ぶ
           </DialogTitle>
         </DialogHeader>
 
         {/* 検索フィルター */}
-        <div className="px-5 py-3 space-y-2.5 flex-shrink-0 border-b border-border/20">
+        <div className="px-5 py-3 space-y-2.5 flex-shrink-0 border-b border-border">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -81,12 +85,12 @@ function ConvenienceModal({
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="商品名で検索..."
-                className="pl-8 h-9 text-sm"
+                className="pl-8 h-10 text-sm"
                 autoFocus
               />
             </div>
             <Select value={chain} onValueChange={(v) => setChain(v as typeof chain)}>
-              <SelectTrigger className="w-36 h-9 text-sm flex-shrink-0">
+              <SelectTrigger className="w-32 h-10 text-sm flex-shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -97,7 +101,7 @@ function ConvenienceModal({
               </SelectContent>
             </Select>
           </div>
-          <div className="page-label">{items.length} 件</div>
+          <div className="section-label">{items.length} 件</div>
         </div>
 
         {/* 商品リスト */}
@@ -115,11 +119,8 @@ function ConvenienceModal({
               {items.map((item) => (
                 <button
                   key={item.id}
-                  className="w-full text-left rounded-xl px-4 py-3 transition-all hover:shadow-sm active:scale-[0.99]"
-                  style={{
-                    background: "oklch(1 0 0 / 0.75)",
-                    border: "1px solid oklch(0.9 0.02 290 / 0.4)",
-                  }}
+                  className="w-full text-left rounded-xl px-4 py-3 transition-all active:scale-[0.99] hover:brightness-110"
+                  style={INNER}
                   onClick={() => {
                     onSelect({
                       name: item.name,
@@ -132,14 +133,14 @@ function ConvenienceModal({
                   }}
                 >
                   <div className="flex items-start gap-2.5">
-                    <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.55 0.1 290)" }} />
+                    <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-foreground leading-snug">{item.name}</div>
-                      <div className="text-[10px] tracking-wider-jp text-muted-foreground mt-0.5">
+                      <div className="text-sm font-semibold text-white leading-snug">{item.name}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         {item.chain === "seven" ? "セブン-イレブン" : item.chain === "familymart" ? "ファミリーマート" : "ローソン"}
                         {item.priceYen ? ` · ¥${item.priceYen}` : ""}
                       </div>
-                      <div className="text-xs mt-1 font-semibold" style={{ color: "oklch(0.35 0.08 290)" }}>
+                      <div className="text-xs mt-1 font-semibold" style={{ color: "oklch(0.62 0.18 220)" }}>
                         {Number(item.calories)}kcal
                         <span className="text-muted-foreground font-normal ml-1.5">
                           P{Number(item.proteinG)}g / F{Number(item.fatG)}g / C{Number(item.carbsG)}g
@@ -252,27 +253,25 @@ export default function Meals() {
   };
 
   return (
-    <div className="space-y-5 max-w-2xl mx-auto">
-      {/* Page Header — mb-6 でフォームとの余白を確保 */}
-      <div className="pt-1 mb-6">
-        <div className="page-label mb-1.5">MEALS</div>
-        <h1 className="font-display" style={{ fontSize: "clamp(1.75rem,5vw,2.5rem)", color: "oklch(0.32 0.09 290)" }}>
-          食事を記録
-        </h1>
+    <div className="space-y-4 pb-4">
+      {/* Page Header */}
+      <div className="pt-1">
+        <div className="section-label mb-1">MEALS</div>
+        <h1 className="text-2xl font-bold text-white">食事を記録</h1>
       </div>
 
       {/* 入力フォーム */}
-      <div className="rounded-2xl px-5 py-5 space-y-4" style={GLASS}>
+      <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         {/* 日付・区分 */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="page-label">日付</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Label className="section-label">日付</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11" />
           </div>
           <div className="space-y-1.5">
-            <Label className="page-label">区分</Label>
+            <Label className="section-label">区分</Label>
             <Select value={mealType} onValueChange={(v) => setMealType(v as typeof mealType)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -285,8 +284,7 @@ export default function Meals() {
         </div>
 
         {/* 入力方法ボタン群 */}
-        <div className="grid grid-cols-2 gap-2.5">
-          {/* 写真AI解析 */}
+        <div className="grid grid-cols-2 gap-2">
           <div>
             <input
               ref={fileRef}
@@ -303,7 +301,7 @@ export default function Meals() {
             <Button
               type="button"
               variant="outline"
-              className="w-full rounded-xl h-12 gap-2 font-medium text-xs"
+              className="w-full h-12 gap-2 font-semibold text-sm rounded-xl"
               disabled={analyzing}
               onClick={() => fileRef.current?.click()}
             >
@@ -312,35 +310,34 @@ export default function Meals() {
               ) : (
                 <Camera className="h-4 w-4 flex-shrink-0" />
               )}
-              <span className="truncate">{analyzing ? "AI解析中..." : "写真からAI解析"}</span>
+              <span className="truncate">{analyzing ? "AI解析中..." : "写真AI解析"}</span>
             </Button>
           </div>
-
-          {/* コンビニ商品から入力 */}
           <Button
             type="button"
             variant="outline"
-            className="w-full rounded-xl h-12 gap-2 font-medium text-xs"
+            className="w-full h-12 gap-2 font-semibold text-sm rounded-xl"
             onClick={() => setConvenienceOpen(true)}
           >
             <ShoppingBag className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">コンビニ商品から入力</span>
+            <span className="truncate">コンビニから選ぶ</span>
           </Button>
         </div>
 
         {imageUrl && (
-          <div className="rounded-xl overflow-hidden" style={{ border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}>
-            <img src={imageUrl} alt="食事" className="w-full max-h-56 object-cover" />
+          <div className="rounded-xl overflow-hidden border border-border">
+            <img src={imageUrl} alt="食事" className="w-full max-h-52 object-cover" />
           </div>
         )}
 
         <div className="space-y-1.5">
-          <Label className="page-label">内容（任意）</Label>
+          <Label className="section-label">内容（任意）</Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="例：鶏むね肉のサラダと玄米ごはん"
             rows={2}
+            className="resize-none"
           />
         </div>
 
@@ -351,40 +348,35 @@ export default function Meals() {
           <NumField label="炭水化物 (g)" value={carbsG} onChange={setCarbsG} />
         </div>
 
-        <Button onClick={submit} disabled={addM.isPending} className="w-full rounded-xl h-11 font-medium">
+        <Button
+          onClick={submit}
+          disabled={addM.isPending}
+          className="w-full h-12 font-bold text-sm rounded-xl"
+        >
           {addM.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
           記録する
         </Button>
 
-        <div className="text-[10px] tracking-wider-jp text-muted-foreground flex items-center gap-1">
+        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
           <Sparkles className="h-3 w-3" />
           写真から推定される値は目安です。必要に応じて編集してください。
         </div>
       </div>
 
       {/* 選択日の合計 */}
-      <div className="rounded-2xl px-5 py-4" style={GLASS}>
-        <div className="page-label mb-2">選択日の合計</div>
+      <div className="rounded-xl px-4 py-4" style={CARD}>
+        <div className="section-label mb-3">選択日の合計</div>
         <div className="flex items-end gap-4">
           <div>
-            <div className="font-display leading-none" style={{ fontSize: "2.5rem", color: "oklch(0.35 0.08 290)" }}>
+            <div className="text-3xl font-bold text-white leading-none">
               {Math.round(summaryQ.data?.calories ?? 0)}
             </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">kcal</div>
+            <div className="text-xs text-muted-foreground mt-1">kcal</div>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-xs flex-1 pb-1">
-            <div className="space-y-0.5">
-              <div className="page-label">タンパク質</div>
-              <div className="font-semibold" style={{ color: "oklch(0.35 0.08 290)" }}>{Math.round(summaryQ.data?.proteinG ?? 0)}g</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="page-label">脂質</div>
-              <div className="font-semibold" style={{ color: "oklch(0.35 0.08 290)" }}>{Math.round(summaryQ.data?.fatG ?? 0)}g</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="page-label">炭水化物</div>
-              <div className="font-semibold" style={{ color: "oklch(0.35 0.08 290)" }}>{Math.round(summaryQ.data?.carbsG ?? 0)}g</div>
-            </div>
+          <div className="grid grid-cols-3 gap-3 text-xs flex-1 pb-0.5">
+            <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.62 0.18 220)" />
+            <MacroStat label="脂質" value={Math.round(summaryQ.data?.fatG ?? 0)} color="oklch(0.75 0.18 55)" />
+            <MacroStat label="炭水化物" value={Math.round(summaryQ.data?.carbsG ?? 0)} color="oklch(0.72 0.18 155)" />
           </div>
         </div>
       </div>
@@ -394,43 +386,40 @@ export default function Meals() {
         const list = (listQ.data ?? []).filter((m) => m.mealType === t);
         const kcal = list.reduce((a, m) => a + Number(m.calories), 0);
         return (
-          <div key={t} className="rounded-2xl px-5 py-4" style={GLASS}>
+          <div key={t} className="rounded-xl px-4 py-4" style={CARD}>
             <div className="flex items-center justify-between mb-3">
-              <div className="font-display text-lg" style={{ color: "oklch(0.35 0.08 290)" }}>
-                {MEAL_TYPE_LABELS[t]}
+              <div className="text-base font-bold text-white">{MEAL_TYPE_LABELS[t]}</div>
+              <div className="text-xs font-semibold" style={{ color: "oklch(0.62 0.18 220)" }}>
+                {Math.round(kcal)} kcal · {list.length}件
               </div>
-              <div className="page-label">{Math.round(kcal)} kcal · {list.length}件</div>
             </div>
             {list.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-2">記録なし</div>
+              <div className="text-xs text-muted-foreground py-1">記録なし</div>
             ) : (
               <div className="space-y-2">
                 {list.map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{
-                      background: "oklch(0.97 0.015 290 / 0.55)",
-                      border: "1px solid oklch(0.9 0.02 290 / 0.4)",
-                    }}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3"
+                    style={INNER}
                   >
                     {m.imageUrl && (
                       <img src={m.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-foreground truncate font-medium">
+                      <div className="text-sm font-semibold text-white truncate">
                         {m.description || "（内容未入力）"}
                       </div>
-                      <div className="text-[10px] tracking-wider-jp text-muted-foreground mt-0.5">
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         {Math.round(Number(m.calories))}kcal · P{Math.round(Number(m.proteinG))} /
                         F{Math.round(Number(m.fatG))} / C{Math.round(Number(m.carbsG))}
                       </div>
                     </div>
                     <button
-                      className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg hover:bg-destructive/8 transition-colors flex-shrink-0"
+                      className="tap-target text-muted-foreground hover:text-destructive rounded-lg hover:bg-destructive/10 transition-colors flex-shrink-0"
                       onClick={() => removeM.mutate({ id: m.id })}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
@@ -453,8 +442,17 @@ export default function Meals() {
 function NumField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1.5">
-      <Label className="page-label">{label}</Label>
-      <Input inputMode="decimal" type="number" value={value} onChange={(e) => onChange(e.target.value)} />
+      <Label className="section-label">{label}</Label>
+      <Input inputMode="decimal" type="number" value={value} onChange={(e) => onChange(e.target.value)} className="h-11" />
+    </div>
+  );
+}
+
+function MacroStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="space-y-0.5">
+      <div className="section-label">{label}</div>
+      <div className="text-sm font-bold" style={{ color }}>{value}g</div>
     </div>
   );
 }

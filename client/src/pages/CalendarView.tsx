@@ -1,11 +1,19 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { ChevronLeft, ChevronRight, X, Utensils } from "lucide-react";
+import { ChevronLeft, ChevronRight, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MEAL_TYPE_LABELS } from "@/lib/labels";
 
-const GLASS = "rounded-2xl border border-white/60 bg-white/55 backdrop-blur-md shadow-[0_2px_16px_oklch(0.35_0.08_290/0.07)]";
+const CARD = {
+  background: "oklch(0.20 0.05 240)",
+  border: "1px solid oklch(0.30 0.04 240)",
+} as const;
+
+const INNER = {
+  background: "oklch(0.24 0.04 240)",
+  border: "1px solid oklch(0.30 0.04 240)",
+} as const;
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -18,7 +26,7 @@ function getDaysInMonth(year: number, month: number) {
 }
 
 function getFirstDayOfWeek(year: number, month: number) {
-  return new Date(year, month - 1, 1).getDay(); // 0=Sun
+  return new Date(year, month - 1, 1).getDay();
 }
 
 function formatDate(year: number, month: number, day: number) {
@@ -26,12 +34,12 @@ function formatDate(year: number, month: number, day: number) {
 }
 
 function calorieColor(kcal: number, target: number | null) {
-  if (!target) return "oklch(0.55 0.12 290)";
+  if (!target) return "oklch(0.62 0.18 220)";
   const ratio = kcal / target;
-  if (ratio < 0.7) return "oklch(0.55 0.14 200)"; // 青 — 少なめ
-  if (ratio <= 1.1) return "oklch(0.48 0.14 150)"; // 緑 — 良好
-  if (ratio <= 1.3) return "oklch(0.6 0.16 60)";   // 黄 — 注意
-  return "oklch(0.55 0.18 25)";                     // 赤 — 超過
+  if (ratio < 0.7) return "oklch(0.62 0.18 220)";
+  if (ratio <= 1.1) return "oklch(0.72 0.18 155)";
+  if (ratio <= 1.3) return "oklch(0.75 0.18 55)";
+  return "oklch(0.65 0.22 25)";
 }
 
 export default function CalendarView() {
@@ -55,7 +63,6 @@ export default function CalendarView() {
 
   const targetCalories = goalData?.targetCalories ? Number(goalData.targetCalories) : null;
 
-  // date → summary map
   const summaryMap = useMemo(() => {
     const m = new Map<string, { calories: number; count: number }>();
     for (const s of monthlySummary) {
@@ -77,12 +84,10 @@ export default function CalendarView() {
     else setMonth(m => m + 1);
   }
 
-  // Build calendar grid cells (null = empty padding)
   const cells: (number | null)[] = [
     ...Array(firstDow).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  // Pad to complete last row
   while (cells.length % 7 !== 0) cells.push(null);
 
   const recordedDays = monthlySummary.length;
@@ -90,64 +95,74 @@ export default function CalendarView() {
   const avgCalories = recordedDays > 0 ? Math.round(totalCalories / recordedDays) : 0;
 
   return (
-    <div className="space-y-5">
-      {/* Page Title */}
-      <div className="pt-1 mb-6">
-        <p className="page-label mb-1">MEAL CALENDAR</p>
-        <h1 className="font-display text-2xl md:text-3xl" style={{ color: "oklch(0.35 0.08 290)" }}>
-          食事カレンダー
-        </h1>
+    <div className="space-y-4 pb-4">
+      {/* Page Header */}
+      <div className="pt-1">
+        <div className="section-label mb-1">MEAL CALENDAR</div>
+        <h1 className="text-2xl font-bold text-white">食事カレンダー</h1>
       </div>
 
       {/* Month Summary Stats */}
-      <div className={`${GLASS} p-4`}>
+      <div className="rounded-xl px-4 py-4" style={CARD}>
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
-            <div className="text-xs text-muted-foreground tracking-wider-jp mb-1">記録日数</div>
-            <div className="font-display text-xl" style={{ color: "oklch(0.35 0.08 290)" }}>
-              {recordedDays}<span className="text-xs font-sans ml-0.5">日</span>
+            <div className="section-label mb-1">記録日数</div>
+            <div className="text-xl font-bold text-white">
+              {recordedDays}<span className="text-xs font-normal text-muted-foreground ml-0.5">日</span>
             </div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground tracking-wider-jp mb-1">平均摂取</div>
-            <div className="font-display text-xl" style={{ color: "oklch(0.35 0.08 290)" }}>
+            <div className="section-label mb-1">平均摂取</div>
+            <div className="text-xl font-bold" style={{ color: "oklch(0.62 0.18 220)" }}>
               {avgCalories > 0 ? avgCalories.toLocaleString() : "—"}
-              <span className="text-xs font-sans ml-0.5">kcal</span>
+              <span className="text-xs font-normal text-muted-foreground ml-0.5">kcal</span>
             </div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground tracking-wider-jp mb-1">月合計</div>
-            <div className="font-display text-xl" style={{ color: "oklch(0.35 0.08 290)" }}>
+            <div className="section-label mb-1">月合計</div>
+            <div className="text-xl font-bold text-white">
               {totalCalories > 0 ? Math.round(totalCalories / 1000) : "—"}
-              <span className="text-xs font-sans ml-0.5">kcal</span>
+              <span className="text-xs font-normal text-muted-foreground ml-0.5">k</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Calendar Card */}
-      <div className={`${GLASS} p-4`}>
+      <div className="rounded-xl px-4 py-4" style={CARD}>
         {/* Month Navigation */}
         <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={prevMonth} className="h-8 w-8 rounded-full">
-            <ChevronLeft className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={prevMonth}
+            className="h-9 w-9 rounded-full"
+            style={{ color: "oklch(0.75 0.02 220)" }}
+          >
+            <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div className="font-display text-lg" style={{ color: "oklch(0.35 0.08 290)" }}>
+          <div className="text-lg font-bold text-white">
             {year}年 {month}月
           </div>
-          <Button variant="ghost" size="icon" onClick={nextMonth} className="h-8 w-8 rounded-full">
-            <ChevronRight className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nextMonth}
+            className="h-9 w-9 rounded-full"
+            style={{ color: "oklch(0.75 0.02 220)" }}
+          >
+            <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Weekday Header */}
-        <div className="grid grid-cols-7 mb-1">
+        <div className="grid grid-cols-7 mb-2">
           {WEEKDAYS.map((d, i) => (
             <div
               key={d}
-              className="text-center text-[10px] font-medium tracking-wider-jp py-1"
+              className="text-center text-[11px] font-semibold py-1"
               style={{
-                color: i === 0 ? "oklch(0.55 0.18 25)" : i === 6 ? "oklch(0.45 0.15 250)" : "oklch(0.5 0.04 290)",
+                color: i === 0 ? "oklch(0.65 0.22 25)" : i === 6 ? "oklch(0.62 0.18 220)" : "oklch(0.55 0.03 220)",
               }}
             >
               {d}
@@ -172,31 +187,32 @@ export default function CalendarView() {
               <button
                 key={dateStr}
                 onClick={() => setSelectedDate(dateStr)}
-                className={`
-                  aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5
-                  transition-all duration-150 active:scale-95
-                  ${isSelected ? "ring-2 ring-primary shadow-md" : ""}
-                  ${hasRecord ? "bg-white/70 shadow-sm" : "hover:bg-white/40"}
-                  ${isToday && !isSelected ? "ring-1 ring-primary/40" : ""}
-                `}
+                className="aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-150 active:scale-95"
                 style={{
                   background: isSelected
-                    ? "oklch(0.93 0.05 290)"
+                    ? "oklch(0.62 0.18 220 / 0.3)"
                     : hasRecord
-                    ? "oklch(1 0 0 / 0.65)"
-                    : undefined,
+                    ? "oklch(0.26 0.05 240)"
+                    : "transparent",
+                  border: isSelected
+                    ? "1.5px solid oklch(0.62 0.18 220)"
+                    : isToday
+                    ? "1.5px solid oklch(0.62 0.18 220 / 0.5)"
+                    : hasRecord
+                    ? "1px solid oklch(0.32 0.04 240)"
+                    : "1px solid transparent",
                 }}
               >
                 <span
                   className="text-xs font-semibold leading-none"
                   style={{
                     color: isToday
-                      ? "oklch(0.38 0.12 290)"
+                      ? "oklch(0.62 0.18 220)"
                       : dow === 0
-                      ? "oklch(0.55 0.18 25)"
+                      ? "oklch(0.65 0.22 25)"
                       : dow === 6
-                      ? "oklch(0.45 0.15 250)"
-                      : "oklch(0.35 0.04 290)",
+                      ? "oklch(0.62 0.18 220)"
+                      : "oklch(0.85 0.02 220)",
                     fontWeight: isToday ? 700 : 500,
                   }}
                 >
@@ -204,7 +220,7 @@ export default function CalendarView() {
                 </span>
                 {hasRecord && summary ? (
                   <span
-                    className="text-[8px] leading-none font-medium"
+                    className="text-[8px] leading-none font-bold"
                     style={{ color: calorieColor(summary.calories, targetCalories) }}
                   >
                     {summary.calories >= 1000
@@ -212,7 +228,10 @@ export default function CalendarView() {
                       : summary.calories}
                   </span>
                 ) : (
-                  <span className="w-1 h-1 rounded-full bg-border/40" />
+                  <span
+                    className="w-1 h-1 rounded-full"
+                    style={{ background: "oklch(0.35 0.03 240)" }}
+                  />
                 )}
               </button>
             );
@@ -220,21 +239,21 @@ export default function CalendarView() {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border/30">
+        <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: "1px solid oklch(0.28 0.04 240)" }}>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-white/70 border border-border/40 shadow-sm" />
-            <span className="text-[10px] text-muted-foreground tracking-wider-jp">記録あり</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-border/30" />
-            <span className="text-[10px] text-muted-foreground tracking-wider-jp">記録なし</span>
+            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.26 0.05 240)", border: "1px solid oklch(0.32 0.04 240)" }} />
+            <span className="text-[10px] text-muted-foreground">記録あり</span>
           </div>
           {targetCalories && (
-            <div className="flex items-center gap-1.5 ml-auto">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.48 0.14 150)" }} />
-              <span className="text-[10px] text-muted-foreground tracking-wider-jp">目標内</span>
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.55 0.18 25)" }} />
-              <span className="text-[10px] text-muted-foreground tracking-wider-jp">超過</span>
+            <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: "oklch(0.72 0.18 155)" }} />
+                <span className="text-[10px] text-muted-foreground">目標内</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: "oklch(0.65 0.22 25)" }} />
+                <span className="text-[10px] text-muted-foreground">超過</span>
+              </div>
             </div>
           )}
         </div>
@@ -242,9 +261,12 @@ export default function CalendarView() {
 
       {/* Day Detail Dialog */}
       <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) setSelectedDate(null); }}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl border-white/60 bg-white/90 backdrop-blur-xl">
+        <DialogContent
+          className="max-w-sm mx-auto rounded-2xl"
+          style={{ background: "oklch(0.18 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+        >
           <DialogHeader>
-            <DialogTitle className="font-display text-lg" style={{ color: "oklch(0.35 0.08 290)" }}>
+            <DialogTitle className="text-lg font-bold text-white">
               {selectedDate
                 ? `${Number(selectedDate.split("-")[1])}月${Number(selectedDate.split("-")[2])}日の食事`
                 : ""}
@@ -254,17 +276,20 @@ export default function CalendarView() {
           {selectedSummary && (
             <div className="space-y-4">
               {/* Day Totals */}
-              <div className="rounded-xl bg-white/60 border border-white/70 p-3">
+              <div className="rounded-xl px-3 py-3" style={INNER}>
                 <div className="grid grid-cols-4 gap-2 text-center">
                   {[
-                    { label: "カロリー", value: `${Math.round(selectedSummary.calories)}`, unit: "kcal" },
+                    { label: "カロリー", value: `${Math.round(selectedSummary.calories)}`, unit: "kcal", accent: true },
                     { label: "タンパク質", value: `${Math.round(selectedSummary.proteinG)}`, unit: "g" },
                     { label: "脂質", value: `${Math.round(selectedSummary.fatG)}`, unit: "g" },
                     { label: "炭水化物", value: `${Math.round(selectedSummary.carbsG)}`, unit: "g" },
-                  ].map(({ label, value, unit }) => (
+                  ].map(({ label, value, unit, accent }) => (
                     <div key={label}>
-                      <div className="text-[9px] text-muted-foreground tracking-wider-jp">{label}</div>
-                      <div className="font-display text-base mt-0.5" style={{ color: "oklch(0.35 0.08 290)" }}>
+                      <div className="text-[9px] text-muted-foreground">{label}</div>
+                      <div
+                        className="text-base font-bold mt-0.5"
+                        style={{ color: accent ? "oklch(0.62 0.18 220)" : "oklch(0.90 0.01 220)" }}
+                      >
                         {value}
                       </div>
                       <div className="text-[9px] text-muted-foreground">{unit}</div>
@@ -281,26 +306,30 @@ export default function CalendarView() {
                     if (items.length === 0) return null;
                     return (
                       <div key={type}>
-                        <div className="text-[10px] text-muted-foreground tracking-wider-jp font-medium mb-1.5 uppercase">
+                        <div className="section-label mb-1.5 uppercase">
                           {MEAL_TYPE_LABELS[type]}
                         </div>
                         <div className="space-y-1.5">
                           {items.map((item) => (
                             <div
                               key={item.id}
-                              className="flex items-start justify-between gap-2 rounded-xl bg-white/50 border border-white/60 px-3 py-2"
+                              className="flex items-start justify-between gap-2 rounded-xl px-3 py-2"
+                              style={INNER}
                             >
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-foreground truncate">{item.description ?? "食事記録"}</div>
+                                <div className="text-sm font-semibold text-white truncate">{item.description ?? "食事記録"}</div>
                                 <div className="text-[10px] text-muted-foreground mt-0.5">
                                   P {Math.round(Number(item.proteinG))}g ·
                                   F {Math.round(Number(item.fatG))}g ·
                                   C {Math.round(Number(item.carbsG))}g
                                 </div>
                               </div>
-                              <div className="text-sm font-semibold shrink-0" style={{ color: "oklch(0.45 0.1 290)" }}>
+                              <div
+                                className="text-sm font-bold shrink-0"
+                                style={{ color: "oklch(0.62 0.18 220)" }}
+                              >
                                 {Math.round(Number(item.calories))}
-                                <span className="text-[9px] font-normal ml-0.5">kcal</span>
+                                <span className="text-[9px] font-normal text-muted-foreground ml-0.5">kcal</span>
                               </div>
                             </div>
                           ))}
@@ -312,7 +341,7 @@ export default function CalendarView() {
               ) : (
                 <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
                   <Utensils className="h-8 w-8 opacity-30" />
-                  <p className="text-sm tracking-wider-jp">この日の記録はありません</p>
+                  <p className="text-sm">この日の記録はありません</p>
                 </div>
               )}
             </div>
@@ -321,7 +350,7 @@ export default function CalendarView() {
           {!selectedSummary && (
             <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
               <Utensils className="h-8 w-8 opacity-30" />
-              <p className="text-sm tracking-wider-jp">この日の記録はありません</p>
+              <p className="text-sm">この日の記録はありません</p>
             </div>
           )}
         </DialogContent>
