@@ -40,6 +40,8 @@ const NAV_ITEMS = [
 
 /* ── Header height constants ── */
 const HEADER_H = 64; // px — keep in sync with header py/h values below
+// Content top padding = header height + breathing room (28px) = 92px
+const CONTENT_PT = HEADER_H + 28;
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -69,13 +71,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col">
       {/* ── Sticky Header ── */}
       <header
-        className="sticky top-0 z-30"
+        className="fixed top-0 left-0 right-0 z-30"
         style={{
           height: `${HEADER_H}px`,
-          background: "oklch(1 0 0 / 0.72)",
+          background: "oklch(1 0 0 / 0.92)",
           backdropFilter: "blur(24px) saturate(1.4)",
           WebkitBackdropFilter: "blur(24px) saturate(1.4)",
-          borderBottom: "1px solid oklch(1 0 0 / 0.7)",
+          borderBottom: "1px solid oklch(0.9 0.02 290 / 0.5)",
           boxShadow: "0 1px 0 oklch(0.35 0.08 290 / 0.06), 0 4px 16px oklch(0.35 0.08 290 / 0.04)",
         }}
       >
@@ -146,9 +148,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Main Content ──
-          pt-6 on mobile, pt-8 on md — provides breathing room below the sticky header */}
-      <main className="flex-1 pb-28 md:pb-12">
-        <div className="max-w-6xl mx-auto px-4 pt-8 md:pt-10">
+          paddingTop = HEADER_H (64px) + 28px breathing room = 92px
+          Using fixed header + explicit paddingTop ensures content is NEVER hidden behind the header
+          on any device or screen size. */}
+      <main
+        className="flex-1 pb-28 md:pb-12"
+        style={{ paddingTop: `${CONTENT_PT}px` }}
+      >
+        <div className="max-w-6xl mx-auto px-4">
           {children}
         </div>
       </main>
@@ -212,12 +219,13 @@ function LandingPage() {
     <div className="min-h-screen">
       {/* Landing Header */}
       <div
-        className="sticky top-0 z-30 px-6 py-4 flex items-center gap-3"
+        className="fixed top-0 left-0 right-0 z-30 px-6 flex items-center gap-3"
         style={{
-          background: "oklch(1 0 0 / 0.65)",
+          height: `${HEADER_H}px`,
+          background: "oklch(1 0 0 / 0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid oklch(1 0 0 / 0.6)",
+          borderBottom: "1px solid oklch(0.9 0.02 290 / 0.5)",
         }}
       >
         <DecorBracket />
@@ -231,7 +239,7 @@ function LandingPage() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 pt-16 pb-28">
+      <div className="max-w-3xl mx-auto px-6 pb-28" style={{ paddingTop: `${CONTENT_PT}px` }}>
         {/* Hero */}
         <div className="mb-14">
           <div className="page-label mb-4">AI-POWERED DIET MANAGEMENT</div>
