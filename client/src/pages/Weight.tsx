@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +16,14 @@ import {
   YAxis,
 } from "recharts";
 import { toast } from "sonner";
+
+const GLASS = {
+  background: "oklch(1 0 0 / 0.72)",
+  border: "1px solid oklch(1 0 0 / 0.78)",
+  backdropFilter: "blur(20px) saturate(1.4)",
+  WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+  boxShadow: "0 1px 2px oklch(0.35 0.08 290 / 0.04), 0 4px 12px oklch(0.35 0.08 290 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.9)",
+} as const;
 
 export default function Weight() {
   const [date, setDate] = useState(todayDateString());
@@ -70,39 +77,40 @@ export default function Weight() {
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground">WEIGHT</div>
-        <h1 className="font-display text-3xl text-primary mt-1">体重の推移</h1>
+    <div className="space-y-5 max-w-2xl mx-auto">
+      {/* Page Header */}
+      <div className="pt-1">
+        <div className="page-label mb-1.5">WEIGHT</div>
+        <h1 className="font-display" style={{ fontSize: "clamp(1.75rem,5vw,2.5rem)", color: "oklch(0.32 0.09 290)" }}>
+          体重の推移
+        </h1>
       </div>
 
       {/* サマリー */}
-      <Card className="p-5 bg-white/70 border-white/70 backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-[11px] tracking-wider-jp text-muted-foreground">
-          <TrendingDown className="h-3.5 w-3.5" />
+      <div className="rounded-2xl px-5 py-5" style={GLASS}>
+        <div className="flex items-center gap-1.5 page-label mb-3">
+          <TrendingDown className="h-3 w-3" />
           推移サマリー
         </div>
-        <div className="grid grid-cols-3 gap-3 mt-3">
+        <div className="grid grid-cols-3 gap-2.5">
           <Box label="開始" value={startW != null ? startW.toFixed(1) : "—"} />
           <Box label="現在" value={currentW != null ? currentW.toFixed(1) : "—"} highlight />
           <Box label="目標" value={targetW != null ? targetW.toFixed(1) : "—"} />
         </div>
         {startW != null && currentW != null && (
-          <div className="mt-3 text-[11px] tracking-wider-jp text-muted-foreground">
+          <div className="mt-3 text-xs tracking-wider-jp text-muted-foreground">
             開始から{" "}
-            <strong className="text-primary">
+            <strong style={{ color: "oklch(0.45 0.1 290)" }}>
               {(startW - currentW).toFixed(1)} kg
             </strong>{" "}
             の変化
           </div>
         )}
-      </Card>
+      </div>
 
       {/* チャート */}
-      <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm">
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground mb-2">
-          推移グラフ
-        </div>
+      <div className="rounded-2xl px-5 py-5" style={GLASS}>
+        <div className="page-label mb-3">推移グラフ</div>
         <div className="h-56">
           {data.length === 0 ? (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
@@ -113,96 +121,83 @@ export default function Weight() {
               <AreaChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="w" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="oklch(0.72 0.12 320)" stopOpacity={0.55} />
-                    <stop offset="100%" stopColor="oklch(0.78 0.11 160)" stopOpacity={0.05} />
+                    <stop offset="0%" stopColor="oklch(0.62 0.12 290)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="oklch(0.78 0.08 320)" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="oklch(0.9 0.025 320)" strokeDasharray="2 4" />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="oklch(0.55 0.04 295)" />
+                <CartesianGrid stroke="oklch(0.9 0.02 290 / 0.5)" strokeDasharray="2 4" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "oklch(0.55 0.04 295)" }} stroke="transparent" />
                 <YAxis
                   domain={[Math.floor(minW), Math.ceil(maxW)]}
-                  tick={{ fontSize: 10 }}
-                  stroke="oklch(0.55 0.04 295)"
+                  tick={{ fontSize: 10, fill: "oklch(0.55 0.04 295)" }}
+                  stroke="transparent"
                   width={32}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "oklch(0.99 0.005 320)",
-                    border: "1px solid oklch(0.9 0.025 320)",
+                    background: "oklch(0.99 0.005 290 / 0.95)",
+                    border: "1px solid oklch(0.9 0.03 290 / 0.5)",
                     borderRadius: 12,
                     fontSize: 12,
+                    boxShadow: "0 4px 12px oklch(0.35 0.08 290 / 0.1)",
                   }}
                   formatter={(v: number) => [`${v.toFixed(1)} kg`, "体重"]}
                 />
                 <Area
                   type="monotone"
                   dataKey="weight"
-                  stroke="oklch(0.55 0.1 295)"
-                  strokeWidth={2}
+                  stroke="oklch(0.52 0.12 290)"
+                  strokeWidth={2.5}
                   fill="url(#w)"
+                  dot={{ r: 3, fill: "oklch(0.52 0.12 290)", strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: "oklch(0.52 0.12 290)", strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
-      </Card>
+      </div>
 
-      {/* 入力 */}
-      <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm space-y-3">
+      {/* 入力フォーム */}
+      <div className="rounded-2xl px-5 py-5 space-y-4" style={GLASS}>
+        <div className="page-label">体重を記録</div>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-[11px] tracking-wider-jp">日付</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="bg-white/70"
-            />
+          <div className="space-y-1.5">
+            <Label className="page-label">日付</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
-          <div>
-            <Label className="text-[11px] tracking-wider-jp">体重 (kg)</Label>
+          <div className="space-y-1.5">
+            <Label className="page-label">体重 (kg)</Label>
             <Input
               type="number"
               inputMode="decimal"
               step="0.1"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className="bg-white/70"
               placeholder="例: 62.4"
             />
           </div>
         </div>
-        <div>
-          <Label className="text-[11px] tracking-wider-jp">メモ（任意）</Label>
+        <div className="space-y-1.5">
+          <Label className="page-label">メモ（任意）</Label>
           <Textarea
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="bg-white/70"
             placeholder="体調や朝食前後など"
           />
         </div>
-        <Button
-          onClick={submit}
-          disabled={addM.isPending}
-          className="w-full rounded-full"
-        >
-          {addM.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
+        <Button onClick={submit} disabled={addM.isPending} className="w-full rounded-xl h-11 font-medium">
+          {addM.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
           記録する
         </Button>
-      </Card>
+      </div>
 
       {/* 履歴 */}
-      <Card className="p-4 bg-white/60 border-white/70 backdrop-blur-sm">
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground mb-2">
-          記録履歴
-        </div>
+      <div className="rounded-2xl px-5 py-5" style={GLASS}>
+        <div className="page-label mb-3">記録履歴</div>
         {data.length === 0 ? (
-          <div className="text-xs text-muted-foreground">まだ記録がありません</div>
+          <div className="text-xs text-muted-foreground py-2">まだ記録がありません</div>
         ) : (
           <div className="space-y-2">
             {[...(listQ.data ?? [])]
@@ -210,51 +205,47 @@ export default function Weight() {
               .map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center gap-3 bg-white/50 rounded-2xl px-3 py-2 border border-white/70"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{
+                    background: "oklch(0.97 0.015 290 / 0.55)",
+                    border: "1px solid oklch(0.9 0.02 290 / 0.4)",
+                  }}
                 >
                   <div className="flex-1">
-                    <div className="font-display text-base text-primary leading-none">
+                    <div className="font-display text-xl leading-none" style={{ color: "oklch(0.35 0.08 290)" }}>
                       {Number(r.weightKg).toFixed(1)}{" "}
-                      <span className="text-xs text-muted-foreground">kg</span>
+                      <span className="text-xs text-muted-foreground font-sans">kg</span>
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-1">
-                      {r.recordDate} {r.note ? `· ${r.note}` : ""}
+                    <div className="text-[10px] text-muted-foreground mt-1 tracking-wider-jp">
+                      {r.recordDate}{r.note ? ` · ${r.note}` : ""}
                     </div>
                   </div>
                   <button
                     onClick={() => removeM.mutate({ id: r.id })}
-                    className="p-1 text-muted-foreground hover:text-destructive"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
 
-function Box({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
+function Box({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div
-      className={`rounded-2xl px-3 py-2.5 ${
-        highlight
-          ? "bg-primary/10 border border-primary/20"
-          : "bg-white/50 border border-white/70"
-      }`}
+      className="rounded-xl px-3 py-2.5"
+      style={{
+        background: highlight ? "oklch(0.93 0.06 290 / 0.35)" : "oklch(0.97 0.015 290 / 0.55)",
+        border: `1px solid ${highlight ? "oklch(0.75 0.1 290 / 0.3)" : "oklch(0.9 0.02 290 / 0.4)"}`,
+      }}
     >
       <div className="text-[10px] tracking-wider-jp text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-display text-lg text-primary leading-none">{value}</div>
+      <div className="mt-0.5 font-display text-xl leading-none" style={{ color: "oklch(0.35 0.08 290)" }}>{value}</div>
       <div className="text-[10px] text-muted-foreground mt-0.5">kg</div>
     </div>
   );

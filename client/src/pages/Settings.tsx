@@ -1,6 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -8,6 +7,14 @@ import { trpc } from "@/lib/trpc";
 import { Bell, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+const GLASS = {
+  background: "oklch(1 0 0 / 0.72)",
+  border: "1px solid oklch(1 0 0 / 0.78)",
+  backdropFilter: "blur(20px) saturate(1.4)",
+  WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+  boxShadow: "0 1px 2px oklch(0.35 0.08 290 / 0.04), 0 4px 12px oklch(0.35 0.08 290 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.9)",
+} as const;
 
 export default function Settings() {
   const { user, logout } = useAuth();
@@ -62,61 +69,66 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground">SETTINGS</div>
-        <h1 className="font-display text-3xl text-primary mt-1">設定</h1>
+    <div className="space-y-5 max-w-2xl mx-auto">
+      {/* Page Header */}
+      <div className="pt-1">
+        <div className="page-label mb-1.5">SETTINGS</div>
+        <h1 className="font-display" style={{ fontSize: "clamp(1.75rem,5vw,2.5rem)", color: "oklch(0.32 0.09 290)" }}>
+          設定
+        </h1>
       </div>
 
       {/* アカウント */}
-      <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-[11px] tracking-wider-jp text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5" />
+      <div className="rounded-2xl px-5 py-5 space-y-3" style={GLASS}>
+        <div className="flex items-center gap-1.5 page-label">
+          <ShieldCheck className="h-3 w-3" />
           アカウント
         </div>
-        <div className="mt-2 text-sm text-foreground">
-          {user?.name ?? user?.email ?? "ゲスト"}
+        <div>
+          <div className="text-sm font-medium text-foreground">{user?.name ?? user?.email ?? "ゲスト"}</div>
+          {user?.email && <div className="text-xs text-muted-foreground mt-0.5">{user.email}</div>}
         </div>
-        <div className="text-[11px] text-muted-foreground">{user?.email}</div>
         <Button
           variant="outline"
-          className="bg-white/60 rounded-full mt-3"
+          className="rounded-xl h-10 font-medium"
           onClick={() => logout()}
         >
           <LogOut className="h-4 w-4 mr-2" />
           ログアウト
         </Button>
-      </Card>
+      </div>
 
-      {/* 通知 */}
-      <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm space-y-3">
-        <div className="flex items-center gap-2 text-[11px] tracking-wider-jp text-muted-foreground">
-          <Bell className="h-3.5 w-3.5" />
+      {/* 通知リマインダー */}
+      <div className="rounded-2xl px-5 py-5 space-y-4" style={GLASS}>
+        <div className="flex items-center gap-1.5 page-label">
+          <Bell className="h-3 w-3" />
           記録リマインダー
         </div>
 
-        <div className="rounded-2xl bg-secondary/30 border border-white/70 px-3 py-2 text-[11px] text-foreground/80">
-          ブラウザを開いている時間に、設定時刻でまだ記録がなければやさしくお知らせします。
-          まずは通知の許可をお願いします。
+        <div
+          className="rounded-xl px-4 py-3 text-xs text-foreground/80 leading-relaxed"
+          style={{ background: "oklch(0.97 0.015 290 / 0.55)", border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}
+        >
+          ブラウザを開いている時間に、設定時刻でまだ記録がなければやさしくお知らせします。まずは通知の許可をお願いします。
         </div>
 
         <Button
           variant="outline"
-          className="bg-white/60 rounded-full w-full"
+          className="w-full rounded-xl h-10 font-medium"
           onClick={requestPerm}
         >
           <Bell className="h-4 w-4 mr-2" />
           通知を許可する
         </Button>
 
-        <Row
+        <ReminderRow
           label="食事の記録リマインド"
           enabled={mealEnabled}
           time={mealTime}
           onToggle={setMealEnabled}
           onTimeChange={setMealTime}
         />
-        <Row
+        <ReminderRow
           label="体重の記録リマインド"
           enabled={weightEnabled}
           time={weightTime}
@@ -127,17 +139,17 @@ export default function Settings() {
         <Button
           onClick={save}
           disabled={updateM.isPending}
-          className="w-full rounded-full"
+          className="w-full rounded-xl h-11 font-medium"
         >
           {updateM.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          保存
+          設定を保存
         </Button>
-      </Card>
+      </div>
     </div>
   );
 }
 
-function Row({
+function ReminderRow({
   label,
   enabled,
   time,
@@ -151,19 +163,22 @@ function Row({
   onTimeChange: (v: string) => void;
 }) {
   return (
-    <div className="rounded-2xl bg-white/50 border border-white/70 px-3 py-2.5">
+    <div
+      className="rounded-xl px-4 py-3 space-y-2.5"
+      style={{ background: "oklch(0.97 0.015 290 / 0.55)", border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}
+    >
       <div className="flex items-center justify-between">
-        <div className="text-sm text-foreground">{label}</div>
+        <div className="text-sm font-medium text-foreground">{label}</div>
         <Switch checked={enabled} onCheckedChange={onToggle} />
       </div>
-      <div className="mt-2">
-        <Label className="text-[10px] tracking-wider-jp">通知時刻</Label>
+      <div className="space-y-1.5">
+        <Label className="page-label">通知時刻</Label>
         <Input
           type="time"
           value={time}
           onChange={(e) => onTimeChange(e.target.value)}
-          className="bg-white/70"
           disabled={!enabled}
+          className="max-w-[140px]"
         />
       </div>
     </div>

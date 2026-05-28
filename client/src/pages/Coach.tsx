@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,6 +28,14 @@ const ENV_LABELS: Record<Environment, string> = {
   home: "自宅中心",
   both: "両方",
 };
+
+const GLASS = {
+  background: "oklch(1 0 0 / 0.72)",
+  border: "1px solid oklch(1 0 0 / 0.78)",
+  backdropFilter: "blur(20px) saturate(1.4)",
+  WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+  boxShadow: "0 1px 2px oklch(0.35 0.08 290 / 0.04), 0 4px 12px oklch(0.35 0.08 290 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.9)",
+} as const;
 
 export default function Coach() {
   const [experience, setExperience] = useState<Experience>("beginner");
@@ -62,160 +69,150 @@ export default function Coach() {
   const plan = suggestM.data;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground">
-          AI PERSONAL TRAINER
-        </div>
-        <h1 className="font-display text-3xl text-primary mt-1">AIトレーナー</h1>
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground mt-1">
+    <div className="space-y-5 max-w-2xl mx-auto">
+      {/* Page Header */}
+      <div className="pt-1">
+        <div className="page-label mb-1.5">AI PERSONAL TRAINER</div>
+        <h1 className="font-display" style={{ fontSize: "clamp(1.75rem,5vw,2.5rem)", color: "oklch(0.32 0.09 290)" }}>
+          AIトレーナー
+        </h1>
+        <p className="text-xs text-muted-foreground mt-1 tracking-wide">
           目標と体組成、経験レベルから1週間分のメニューを提案します
-        </div>
+        </p>
       </div>
 
-      <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm space-y-3">
+      {/* フォーム */}
+      <div className="rounded-2xl px-5 py-5 space-y-4" style={GLASS}>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-[11px] tracking-wider-jp">経験</Label>
-            <Select
-              value={experience}
-              onValueChange={(v) => setExperience(v as Experience)}
-            >
-              <SelectTrigger className="bg-white/70">
+          <div className="space-y-1.5">
+            <Label className="page-label">経験レベル</Label>
+            <Select value={experience} onValueChange={(v) => setExperience(v as Experience)}>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(EXPERIENCE_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>
-                    {v}
-                  </SelectItem>
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label className="text-[11px] tracking-wider-jp">頻度（日/週）</Label>
+          <div className="space-y-1.5">
+            <Label className="page-label">頻度（日/週）</Label>
             <Input
               type="number"
               inputMode="numeric"
               value={daysPerWeek}
               onChange={(e) => setDaysPerWeek(e.target.value)}
-              className="bg-white/70"
+              min={1}
+              max={7}
             />
           </div>
         </div>
-        <div>
-          <Label className="text-[11px] tracking-wider-jp">環境</Label>
-          <Select
-            value={environment}
-            onValueChange={(v) => setEnvironment(v as Environment)}
-          >
-            <SelectTrigger className="bg-white/70">
+
+        <div className="space-y-1.5">
+          <Label className="page-label">トレーニング環境</Label>
+          <Select value={environment} onValueChange={(v) => setEnvironment(v as Environment)}>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {Object.entries(ENV_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>
-                  {v}
-                </SelectItem>
+                <SelectItem key={k} value={k}>{v}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-[11px] tracking-wider-jp">注力したい部位（任意）</Label>
+
+        <div className="space-y-1.5">
+          <Label className="page-label">注力したい部位（任意）</Label>
           <Input
             value={focusArea}
             onChange={(e) => setFocusArea(e.target.value)}
             placeholder="例: お腹周り / 下半身"
-            className="bg-white/70"
           />
         </div>
-        <div>
-          <Label className="text-[11px] tracking-wider-jp">既往症・痛み（任意）</Label>
+
+        <div className="space-y-1.5">
+          <Label className="page-label">既往症・痛み（任意）</Label>
           <Textarea
             rows={2}
             value={hasInjury}
             onChange={(e) => setHasInjury(e.target.value)}
             placeholder="例: 腰に違和感がある"
-            className="bg-white/70"
           />
         </div>
 
         <Button
           onClick={onSubmit}
           disabled={suggestM.isPending}
-          className="w-full rounded-full"
+          className="w-full rounded-xl h-11 font-medium"
         >
           {suggestM.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />
           )}
-          AIに提案してもらう
+          AIにメニューを提案してもらう
         </Button>
-      </Card>
+      </div>
 
+      {/* 提案結果 */}
       {plan && (
         <>
-          <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm">
-            <div className="flex items-center gap-2 text-[11px] tracking-wider-jp text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
+          {/* サマリー */}
+          <div className="rounded-2xl px-5 py-4 space-y-2" style={GLASS}>
+            <div className="flex items-center gap-1.5 page-label">
+              <Sparkles className="h-3 w-3" />
               AIコーチからのアドバイス
             </div>
-            <div className="mt-2 text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-              {plan.summary}
-            </div>
+            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{plan.summary}</p>
             {plan.cautions && (
-              <div className="mt-3 rounded-2xl bg-secondary/30 border border-white/70 px-3 py-2 text-[12px] text-foreground/80">
-                {plan.cautions}
+              <div
+                className="rounded-xl px-3 py-2.5 text-xs text-foreground/80 leading-relaxed"
+                style={{ background: "oklch(0.97 0.015 290 / 0.55)", border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}
+              >
+                ⚠️ {plan.cautions}
               </div>
             )}
-          </Card>
+          </div>
 
+          {/* 週次プラン */}
           <div className="space-y-3">
             {plan.weeklyPlan.map((day, di) => (
-              <Card
-                key={di}
-                className="p-4 bg-white/70 border-white/70 backdrop-blur-sm"
-              >
+              <div key={di} className="rounded-2xl px-5 py-4 space-y-3" style={GLASS}>
                 <div className="flex items-center justify-between">
-                  <div className="font-display text-lg text-primary">
-                    {day.day}
-                  </div>
-                  <div className="text-[10px] tracking-wider-jp text-muted-foreground">
-                    {day.focus}
-                  </div>
+                  <div className="font-display text-lg" style={{ color: "oklch(0.35 0.08 290)" }}>{day.day}</div>
+                  <div className="page-label">{day.focus}</div>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="space-y-2">
                   {day.exercises.map((ex, i) => (
                     <div
                       key={i}
-                      className="bg-white/50 border border-white/70 rounded-2xl px-3 py-2.5"
+                      className="rounded-xl px-3 py-2.5"
+                      style={{ background: "oklch(0.97 0.015 290 / 0.55)", border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}
                     >
                       <div className="flex items-start gap-2">
-                        <Dumbbell className="h-4 w-4 text-primary mt-0.5" />
-                        <div className="flex-1">
-                          <div className="text-sm text-foreground">
+                        <Dumbbell className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.55 0.1 290)" }} />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-foreground">
                             {ex.name}
-                            <span className="text-[10px] tracking-wider-jp text-muted-foreground ml-2">
+                            <span className="text-[10px] tracking-wider-jp text-muted-foreground ml-2 font-normal">
                               ({ex.targetMuscle})
                             </span>
                           </div>
-                          <div className="text-[10px] tracking-wider-jp text-muted-foreground mt-1">
+                          <div className="page-label mt-1">
                             {ex.sets}セット × {ex.reps} · 重量目安: {ex.weightGuide}
                           </div>
                           {ex.note && (
-                            <div className="text-[11px] text-foreground/80 mt-1">
-                              {ex.note}
-                            </div>
+                            <div className="text-xs text-foreground/70 mt-1">{ex.note}</div>
                           )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </>

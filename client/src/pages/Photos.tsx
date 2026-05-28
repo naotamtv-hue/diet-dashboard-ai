@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +13,14 @@ import { trpc } from "@/lib/trpc";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+const GLASS = {
+  background: "oklch(1 0 0 / 0.72)",
+  border: "1px solid oklch(1 0 0 / 0.78)",
+  backdropFilter: "blur(20px) saturate(1.4)",
+  WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+  boxShadow: "0 1px 2px oklch(0.35 0.08 290 / 0.04), 0 4px 12px oklch(0.35 0.08 290 / 0.06), inset 0 1px 0 oklch(1 0 0 / 0.9)",
+} as const;
 
 export default function Photos() {
   const utils = trpc.useUtils();
@@ -53,7 +60,6 @@ export default function Photos() {
     }
   };
 
-  // 比較選択
   const sorted = useMemo(
     () => [...photos].sort((a, b) => (a.recordDate < b.recordDate ? -1 : 1)),
     [photos]
@@ -76,47 +82,50 @@ export default function Photos() {
       : null;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground">BODY PHOTOS</div>
-        <h1 className="font-display text-3xl text-primary mt-1">体型の記録</h1>
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground mt-1">
+    <div className="space-y-5 max-w-2xl mx-auto">
+      {/* Page Header */}
+      <div className="pt-1">
+        <div className="page-label mb-1.5">BODY PHOTOS</div>
+        <h1 className="font-display" style={{ fontSize: "clamp(1.75rem,5vw,2.5rem)", color: "oklch(0.32 0.09 290)" }}>
+          体型の記録
+        </h1>
+        <p className="text-xs text-muted-foreground mt-1 tracking-wide">
           数字に出ない変化を、写真で見える化しましょう
-        </div>
+        </p>
       </div>
 
-      <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm space-y-3">
+      {/* アップロードフォーム */}
+      <div className="rounded-2xl px-5 py-5 space-y-4" style={GLASS}>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-[11px] tracking-wider-jp">日付</Label>
+          <div className="space-y-1.5">
+            <Label className="page-label">日付</Label>
             <Input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-white/70"
             />
           </div>
-          <div>
-            <Label className="text-[11px] tracking-wider-jp">体重 (kg・任意)</Label>
+          <div className="space-y-1.5">
+            <Label className="page-label">体重 (kg・任意)</Label>
             <Input
               type="number"
               inputMode="decimal"
               step="0.1"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className="bg-white/70"
             />
           </div>
         </div>
-        <div>
-          <Label className="text-[11px] tracking-wider-jp">メモ（任意）</Label>
+
+        <div className="space-y-1.5">
+          <Label className="page-label">メモ（任意）</Label>
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="bg-white/70"
             placeholder="例: 起床直後 / 朝食前"
           />
         </div>
+
         <input
           ref={fileRef}
           type="file"
@@ -130,7 +139,7 @@ export default function Photos() {
           }}
         />
         <Button
-          className="w-full rounded-full"
+          className="w-full rounded-xl h-11 font-medium"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
         >
@@ -141,42 +150,39 @@ export default function Photos() {
           )}
           体型写真を追加
         </Button>
-      </Card>
+      </div>
 
-      {/* 比較 */}
+      {/* ビフォーアフター比較 */}
       {sorted.length >= 2 && (
-        <Card className="p-4 bg-white/70 border-white/70 backdrop-blur-sm">
-          <div className="text-[11px] tracking-wider-jp text-muted-foreground">
-            ビフォーアフター比較
-          </div>
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <div>
-              <Label className="text-[11px] tracking-wider-jp">Before</Label>
+        <div className="rounded-2xl px-5 py-5 space-y-4" style={GLASS}>
+          <div className="page-label">ビフォーアフター比較</div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="page-label">Before</Label>
               <Select value={beforeId} onValueChange={setBeforeId}>
-                <SelectTrigger className="bg-white/70">
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {sorted.map((p) => (
                     <SelectItem key={p.id} value={String(p.id)}>
-                      {p.recordDate}
-                      {p.weightKg ? ` / ${Number(p.weightKg).toFixed(1)}kg` : ""}
+                      {p.recordDate}{p.weightKg ? ` / ${Number(p.weightKg).toFixed(1)}kg` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-[11px] tracking-wider-jp">After</Label>
+            <div className="space-y-1.5">
+              <Label className="page-label">After</Label>
               <Select value={afterId} onValueChange={setAfterId}>
-                <SelectTrigger className="bg-white/70">
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {sorted.map((p) => (
                     <SelectItem key={p.id} value={String(p.id)}>
-                      {p.recordDate}
-                      {p.weightKg ? ` / ${Number(p.weightKg).toFixed(1)}kg` : ""}
+                      {p.recordDate}{p.weightKg ? ` / ${Number(p.weightKg).toFixed(1)}kg` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -184,50 +190,55 @@ export default function Photos() {
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Pane title="Before" photo={before} />
-            <Pane title="After" photo={after} />
+          <div className="grid grid-cols-2 gap-3">
+            <PhotoPane title="Before" photo={before} />
+            <PhotoPane title="After" photo={after} />
           </div>
 
           {diff !== null && (
-            <div className="mt-3 rounded-2xl bg-primary/10 border border-primary/20 px-3 py-2.5 text-center">
-              <div className="text-[10px] tracking-wider-jp text-muted-foreground">
-                体重変化
-              </div>
-              <div className="font-display text-2xl text-primary mt-0.5">
-                {diff >= 0 ? "-" : "+"}
-                {Math.abs(diff).toFixed(1)} kg
+            <div
+              className="rounded-xl px-4 py-3 text-center"
+              style={{ background: "oklch(0.93 0.06 290 / 0.25)", border: "1px solid oklch(0.85 0.06 290 / 0.3)" }}
+            >
+              <div className="page-label">体重変化</div>
+              <div className="font-display text-3xl mt-1" style={{ color: "oklch(0.35 0.08 290)" }}>
+                {diff >= 0 ? "−" : "+"}
+                {Math.abs(diff).toFixed(1)}
+                <span className="text-base font-sans ml-1">kg</span>
               </div>
             </div>
           )}
-        </Card>
+        </div>
       )}
 
-      {/* 一覧 */}
-      <Card className="p-4 bg-white/60 border-white/70 backdrop-blur-sm">
-        <div className="text-[11px] tracking-wider-jp text-muted-foreground mb-2">
-          記録一覧
-        </div>
+      {/* 記録一覧 */}
+      <div className="rounded-2xl px-5 py-5" style={GLASS}>
+        <div className="page-label mb-3">記録一覧</div>
         {sorted.length === 0 ? (
-          <div className="text-xs text-muted-foreground">まだ写真がありません</div>
+          <div className="text-xs text-muted-foreground text-center py-6">まだ写真がありません</div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {[...sorted].reverse().map((p) => (
               <div
                 key={p.id}
-                className="relative rounded-2xl overflow-hidden border border-white/70 bg-white/50"
+                className="relative rounded-xl overflow-hidden"
+                style={{ border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}
               >
                 <img
                   src={p.imageUrl}
                   alt={p.recordDate}
                   className="w-full aspect-square object-cover"
                 />
-                <div className="px-2 py-1 text-[10px] tracking-wider-jp text-muted-foreground bg-white/80 backdrop-blur-sm">
+                <div
+                  className="px-2 py-1 text-[10px] tracking-wider-jp text-muted-foreground"
+                  style={{ background: "oklch(1 0 0 / 0.85)", backdropFilter: "blur(8px)" }}
+                >
                   {p.recordDate}
                   {p.weightKg ? ` / ${Number(p.weightKg).toFixed(1)}kg` : ""}
                 </div>
                 <button
-                  className="absolute top-1 right-1 bg-white/80 backdrop-blur-sm rounded-full p-1 text-muted-foreground hover:text-destructive"
+                  className="absolute top-1 right-1 rounded-full p-1 text-muted-foreground hover:text-destructive transition-colors"
+                  style={{ background: "oklch(1 0 0 / 0.85)", backdropFilter: "blur(8px)" }}
                   onClick={() => removeM.mutate({ id: p.id })}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -236,28 +247,27 @@ export default function Photos() {
             ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
 
-function Pane({
+function PhotoPane({
   title,
   photo,
 }: {
   title: string;
-  photo:
-    | {
-        id: number;
-        recordDate: string;
-        imageUrl: string;
-        weightKg: string | null;
-      }
-    | undefined;
+  photo: { id: number; recordDate: string; imageUrl: string; weightKg: string | null } | undefined;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden border border-white/70 bg-white/50">
-      <div className="text-[10px] tracking-wider-jp text-muted-foreground px-2 py-1">
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{ border: "1px solid oklch(0.9 0.02 290 / 0.4)" }}
+    >
+      <div
+        className="text-[10px] tracking-wider-jp text-muted-foreground px-2 py-1.5"
+        style={{ background: "oklch(0.97 0.015 290 / 0.55)" }}
+      >
         {title}
       </div>
       {photo ? (
@@ -267,7 +277,10 @@ function Pane({
             alt={photo.recordDate}
             className="w-full aspect-square object-cover"
           />
-          <div className="px-2 py-1 text-[10px] text-muted-foreground">
+          <div
+            className="px-2 py-1 text-[10px] text-muted-foreground"
+            style={{ background: "oklch(1 0 0 / 0.85)" }}
+          >
             {photo.recordDate}
             {photo.weightKg ? ` / ${Number(photo.weightKg).toFixed(1)}kg` : ""}
           </div>

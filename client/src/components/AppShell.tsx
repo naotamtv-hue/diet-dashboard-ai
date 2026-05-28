@@ -36,15 +36,16 @@ const NAV_ITEMS = [
   { path: "/settings", label: "通知設定", icon: Bell },
 ];
 
+/* ── Header height constants ── */
+const HEADER_H = 64; // px — keep in sync with header py/h values below
+
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user, loading, logout } = useAuth();
   const [location] = useLocation();
 
-  // ブラウザ通知のスケジューラーは認証済み時のみ動かす
   useReminderScheduler(Boolean(user));
 
   useEffect(() => {
-    // ページ遷移時にトップへ
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [location]);
 
@@ -64,59 +65,75 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/40 border-b border-white/40">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+      {/* ── Sticky Header ── */}
+      <header
+        className="sticky top-0 z-30"
+        style={{
+          height: `${HEADER_H}px`,
+          background: "oklch(1 0 0 / 0.72)",
+          backdropFilter: "blur(24px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
+          borderBottom: "1px solid oklch(1 0 0 / 0.7)",
+          boxShadow: "0 1px 0 oklch(0.35 0.08 290 / 0.06), 0 4px 16px oklch(0.35 0.08 290 / 0.04)",
+        }}
+      >
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-full">
+          {/* Brand */}
           <Link href="/">
-            <div className="flex items-center gap-3 cursor-pointer">
+            <div className="flex items-center gap-3 cursor-pointer select-none">
               <DecorBracket />
               <div>
-                <div className="font-display text-xl leading-none text-primary">
+                <div className="font-display text-xl leading-none" style={{ color: "oklch(0.35 0.08 290)" }}>
                   Diet Atelier
                 </div>
-                <div className="text-[10px] tracking-wider-jp text-muted-foreground mt-1">
+                <div className="text-[9px] tracking-wider-jp text-muted-foreground mt-0.5 font-medium">
                   GENTLE DAILY PROGRESS
                 </div>
               </div>
             </div>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-0.5">
             {NAV_ITEMS.map((item) => (
               <Link key={item.path} href={item.path}>
                 <button
-                  className={`px-3 py-2 rounded-full text-xs tracking-wider-jp transition-all ${
+                  className={`px-3.5 py-2 rounded-full text-xs tracking-wider-jp font-medium transition-all duration-150 ${
                     location === item.path
                       ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                      : "text-muted-foreground hover:text-primary hover:bg-primary/8"
                   }`}
                 >
                   {item.label}
                 </button>
               </Link>
             ))}
-          </div>
+          </nav>
 
+          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-full hover:bg-white/60 transition-colors px-1.5 py-1.5">
-                <Avatar className="h-8 w-8 border border-white/80 shadow-sm">
-                  <AvatarFallback className="text-xs font-medium bg-secondary text-primary">
+              <button className="flex items-center gap-2 rounded-full transition-colors px-1.5 py-1.5 hover:bg-primary/8">
+                <Avatar className="h-8 w-8 border-2 border-white shadow-sm">
+                  <AvatarFallback
+                    className="text-xs font-semibold"
+                    style={{ background: "oklch(0.93 0.04 290)", color: "oklch(0.38 0.09 290)" }}
+                  >
                     {user.name?.charAt(0).toUpperCase() ?? "U"}
                   </AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <div className="px-2 py-2 text-xs text-muted-foreground">
-                <div className="font-medium text-foreground truncate">
+            <DropdownMenuContent align="end" className="w-52">
+              <div className="px-3 py-2.5 border-b border-border/50">
+                <div className="font-semibold text-sm text-foreground truncate">
                   {user.name ?? "ゲスト"}
                 </div>
-                <div className="truncate">{user.email ?? ""}</div>
+                <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email ?? ""}</div>
               </div>
               <DropdownMenuItem
                 onClick={() => logout()}
-                className="cursor-pointer text-destructive focus:text-destructive"
+                className="cursor-pointer text-destructive focus:text-destructive mt-1"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 ログアウト
@@ -126,13 +143,25 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="flex-1 pb-24 md:pb-10">
-        <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>
+      {/* ── Main Content ──
+          pt-6 on mobile, pt-8 on md — provides breathing room below the sticky header */}
+      <main className="flex-1 pb-28 md:pb-12">
+        <div className="max-w-6xl mx-auto px-4 pt-8 md:pt-10">
+          {children}
+        </div>
       </main>
 
-      {/* Bottom Nav (mobile) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 backdrop-blur-xl bg-white/70 border-t border-white/60">
+      {/* ── Bottom Nav (mobile only) ── */}
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-40"
+        style={{
+          background: "oklch(1 0 0 / 0.82)",
+          backdropFilter: "blur(24px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.4)",
+          borderTop: "1px solid oklch(1 0 0 / 0.7)",
+          boxShadow: "0 -1px 0 oklch(0.35 0.08 290 / 0.06), 0 -4px 16px oklch(0.35 0.08 290 / 0.04)",
+        }}
+      >
         <div className="grid grid-cols-5 max-w-md mx-auto">
           {NAV_ITEMS.slice(0, 5).map((item) => {
             const Icon = item.icon;
@@ -140,13 +169,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
             return (
               <Link key={item.path} href={item.path}>
                 <button
-                  className={`flex flex-col items-center gap-1 py-2.5 px-1 w-full transition-colors ${
+                  className={`flex flex-col items-center gap-1 py-3 px-1 w-full transition-colors ${
                     active ? "text-primary" : "text-muted-foreground"
                   }`}
                   aria-label={item.label}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-[10px] tracking-wider-jp">{item.label}</span>
+                  <div className={`p-1.5 rounded-xl transition-all ${active ? "bg-primary/10" : ""}`}>
+                    <Icon className={`h-4.5 w-4.5 ${active ? "stroke-[2.2]" : "stroke-[1.8]"}`} style={{ width: "1.125rem", height: "1.125rem" }} />
+                  </div>
+                  <span className={`text-[9.5px] tracking-wider-jp font-medium ${active ? "text-primary" : ""}`}>
+                    {item.label}
+                  </span>
                 </button>
               </Link>
             );
@@ -159,15 +192,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
 function DecorBracket() {
   return (
-    <div className="relative w-7 h-7">
-      <span className="absolute left-0 top-0 w-2 h-px bg-primary/70" />
-      <span className="absolute left-0 top-0 w-px h-2 bg-primary/70" />
-      <span className="absolute right-0 top-0 w-2 h-px bg-primary/70" />
-      <span className="absolute right-0 top-0 w-px h-2 bg-primary/70" />
-      <span className="absolute left-0 bottom-0 w-2 h-px bg-primary/70" />
-      <span className="absolute left-0 bottom-0 w-px h-2 bg-primary/70" />
-      <span className="absolute right-0 bottom-0 w-2 h-px bg-primary/70" />
-      <span className="absolute right-0 bottom-0 w-px h-2 bg-primary/70" />
+    <div className="relative w-6 h-6 flex-shrink-0">
+      <span className="absolute left-0 top-0 w-2 h-px bg-primary/60" />
+      <span className="absolute left-0 top-0 w-px h-2 bg-primary/60" />
+      <span className="absolute right-0 top-0 w-2 h-px bg-primary/60" />
+      <span className="absolute right-0 top-0 w-px h-2 bg-primary/60" />
+      <span className="absolute left-0 bottom-0 w-2 h-px bg-primary/60" />
+      <span className="absolute left-0 bottom-0 w-px h-2 bg-primary/60" />
+      <span className="absolute right-0 bottom-0 w-2 h-px bg-primary/60" />
+      <span className="absolute right-0 bottom-0 w-px h-2 bg-primary/60" />
     </div>
   );
 }
@@ -175,59 +208,83 @@ function DecorBracket() {
 function LandingPage() {
   return (
     <div className="min-h-screen">
-      <div className="max-w-3xl mx-auto px-6 pt-16 pb-24">
-        <div className="flex items-center gap-3 mb-10">
-          <DecorBracket />
-          <div>
-            <div className="font-display text-2xl text-primary leading-none">
-              Diet Atelier
-            </div>
-            <div className="text-[10px] tracking-wider-jp text-muted-foreground mt-1">
-              GENTLE DAILY PROGRESS
-            </div>
+      {/* Landing Header */}
+      <div
+        className="sticky top-0 z-30 px-6 py-4 flex items-center gap-3"
+        style={{
+          background: "oklch(1 0 0 / 0.65)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid oklch(1 0 0 / 0.6)",
+        }}
+      >
+        <DecorBracket />
+        <div>
+          <div className="font-display text-xl leading-none" style={{ color: "oklch(0.35 0.08 290)" }}>
+            Diet Atelier
+          </div>
+          <div className="text-[9px] tracking-wider-jp text-muted-foreground mt-0.5 font-medium">
+            GENTLE DAILY PROGRESS
           </div>
         </div>
+      </div>
 
-        <h1 className="font-display text-4xl md:text-6xl leading-tight text-primary mb-4">
-          静かに、確かに。
-          <br />
-          続けられる減量習慣を。
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground tracking-wide max-w-xl mb-10 leading-relaxed">
-          食事の写真を送るだけでAIがPFCとカロリーを推定。体重・運動・体型写真まで一つに。
-          目標から逆算した1日の目安カロリーと減量計画を、毎日そっと支えます。
-        </p>
+      <div className="max-w-3xl mx-auto px-6 pt-16 pb-28">
+        {/* Hero */}
+        <div className="mb-14">
+          <div className="page-label mb-4">AI-POWERED DIET MANAGEMENT</div>
+          <h1
+            className="font-display leading-tight mb-5"
+            style={{ fontSize: "clamp(2.25rem, 7vw, 3.5rem)", color: "oklch(0.32 0.09 290)" }}
+          >
+            静かに、確かに。<br />
+            続けられる<br className="sm:hidden" />減量習慣を。
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground tracking-wide max-w-lg leading-relaxed">
+            食事の写真を送るだけでAIがPFCとカロリーを推定。体重・運動・体型写真まで一つに。
+            目標から逆算した1日の目安カロリーと減量計画を、毎日そっと支えます。
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
           {[
-            ["AI食事解析", "写真からPFCを自動推定"],
-            ["減量計画の自動算出", "BMR・TDEEから1日の目安kcalを提示"],
-            ["コンビニAI提案", "残カロリーに合う1食を提案"],
-            ["ビフォーアフター", "体型写真で変化を実感"],
-            ["AIパーソナルトレーナー", "目標から週次メニューを提案"],
-            ["記録リマインド", "未記録の日だけそっと通知"],
-          ].map(([t, s]) => (
+            { title: "AI食事解析", sub: "写真からPFC・カロリーを自動推定", icon: "✦" },
+            { title: "減量計画の自動算出", sub: "BMR・TDEEから1日の目安kcalを提示", icon: "◈" },
+            { title: "コンビニAI提案", sub: "残カロリーに合う1食を提案", icon: "◉" },
+            { title: "ビフォーアフター", sub: "体型写真で変化を実感", icon: "◎" },
+            { title: "AIパーソナルトレーナー", sub: "目標から週次メニューを提案", icon: "◆" },
+            { title: "記録リマインド", sub: "未記録の日だけそっと通知", icon: "◇" },
+          ].map(({ title, sub, icon }) => (
             <div
-              key={t}
-              className="bg-white/60 border border-white/70 backdrop-blur-sm rounded-2xl px-5 py-4 shadow-sm"
+              key={title}
+              className="glass-card px-5 py-4 group hover:shadow-md transition-shadow duration-200"
             >
-              <div className="font-display text-lg text-primary">{t}</div>
-              <div className="text-xs text-muted-foreground mt-1 tracking-wide">{s}</div>
+              <div className="flex items-start gap-3">
+                <span className="text-primary/60 text-lg mt-0.5 font-light">{icon}</span>
+                <div>
+                  <div className="font-display text-base" style={{ color: "oklch(0.35 0.08 290)" }}>
+                    {title}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1 tracking-wide">{sub}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
 
-        <Button
-          size="lg"
-          className="rounded-full px-8 shadow-lg"
-          onClick={() => {
-            window.location.href = getLoginUrl();
-          }}
-        >
-          無料で始める
-        </Button>
-        <div className="text-xs text-muted-foreground mt-3 tracking-wider-jp">
-          Manus アカウントでサインインするだけで利用できます。
+        {/* CTA */}
+        <div className="flex flex-col items-start gap-3">
+          <Button
+            size="lg"
+            className="rounded-full px-10 h-12 text-sm tracking-wider-jp font-medium shadow-lg hover:shadow-xl transition-shadow"
+            onClick={() => { window.location.href = getLoginUrl(); }}
+          >
+            無料で始める
+          </Button>
+          <p className="text-xs text-muted-foreground tracking-wider-jp">
+            Manus アカウントでサインインするだけで利用できます。
+          </p>
         </div>
       </div>
     </div>

@@ -11,40 +11,24 @@ function Input({
   onCompositionEnd,
   ...props
 }: React.ComponentProps<"input">) {
-  // Get dialog composition context if available (will be no-op if not inside Dialog)
   const dialogComposition = useDialogComposition();
-
-  // Add composition event handlers to support input method editor (IME) for CJK languages.
   const {
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd,
     onKeyDown: handleKeyDown,
   } = useComposition<HTMLInputElement>({
     onKeyDown: (e) => {
-      // Check if this is an Enter key that should be blocked
       const isComposing = (e.nativeEvent as any).isComposing || dialogComposition.justEndedComposing();
-
-      // If Enter key is pressed while composing or just after composition ended,
-      // don't call the user's onKeyDown (this blocks the business logic)
-      if (e.key === "Enter" && isComposing) {
-        return;
-      }
-
-      // Otherwise, call the user's onKeyDown
+      if (e.key === "Enter" && isComposing) return;
       onKeyDown?.(e);
     },
-    onCompositionStart: e => {
+    onCompositionStart: (e) => {
       dialogComposition.setComposing(true);
       onCompositionStart?.(e);
     },
-    onCompositionEnd: e => {
-      // Mark that composition just ended - this helps handle the Enter key that confirms input
+    onCompositionEnd: (e) => {
       dialogComposition.markCompositionEnd();
-      // Delay setting composing to false to handle Safari's event order
-      // In Safari, compositionEnd fires before the ESC keydown event
-      setTimeout(() => {
-        dialogComposition.setComposing(false);
-      }, 100);
+      setTimeout(() => { dialogComposition.setComposing(false); }, 100);
       onCompositionEnd?.(e);
     },
   });
@@ -54,9 +38,22 @@ function Input({
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        // Base
+        "w-full min-w-0 h-10 px-3.5 py-2 text-sm rounded-xl",
+        "bg-white/60 border border-border/60",
+        "text-foreground placeholder:text-muted-foreground/60",
+        "backdrop-blur-sm",
+        "shadow-[0_1px_2px_oklch(0.35_0.08_290/0.04),inset_0_1px_0_oklch(1_0_0/0.8)]",
+        "transition-[border-color,box-shadow] duration-150 outline-none",
+        // Focus
+        "focus:bg-white/80 focus:border-primary/50",
+        "focus:shadow-[0_1px_2px_oklch(0.35_0.08_290/0.06),0_0_0_3px_oklch(0.55_0.1_290/0.12),inset_0_1px_0_oklch(1_0_0/0.9)]",
+        // Disabled
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+        // File input
+        "file:text-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
+        // Invalid
+        "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
         className
       )}
       onCompositionStart={handleCompositionStart}
