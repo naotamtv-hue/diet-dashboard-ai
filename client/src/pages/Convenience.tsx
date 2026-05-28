@@ -104,7 +104,7 @@ export default function Convenience() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">残り摂取kcal</Label>
             <Input
               type="number"
@@ -115,7 +115,7 @@ export default function Convenience() {
               className="h-11"
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">優先コンビニ</Label>
             <Select
               value={preferredChain}
@@ -161,7 +161,7 @@ export default function Convenience() {
         {combo && (
           <div className="rounded-xl px-4 py-4 space-y-3" style={INNER}>
             <div className="section-label">提案された組み合わせ</div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {combo.items.map((it) => (
                 <div key={it.id} className="flex items-center gap-2 text-sm text-foreground">
                   <ShoppingBag className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
@@ -193,7 +193,7 @@ export default function Convenience() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">コンビニ</Label>
             <Select value={chain} onValueChange={(v) => setChain(v as Chain | "all")}>
               <SelectTrigger className="w-full h-11">
@@ -207,7 +207,7 @@ export default function Convenience() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">カテゴリ</Label>
             <Select value={category} onValueChange={(v) => setCategory(v as Category | "all")}>
               <SelectTrigger className="w-full h-11">
@@ -224,7 +224,7 @@ export default function Convenience() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">キーワード</Label>
             <Input
               value={keyword}
@@ -233,7 +233,7 @@ export default function Convenience() {
               className="h-11"
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">上限kcal</Label>
             <Input
               type="number"

@@ -100,7 +100,7 @@ export default function Goal() {
       {/* フォーム */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">性別</Label>
             <Select value={gender} onValueChange={(v) => setGender(v as "male" | "female")}>
               <SelectTrigger className="w-full h-11">
@@ -112,35 +112,35 @@ export default function Goal() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">年齢</Label>
             <Input type="number" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} className="h-11" />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">身長 (cm)</Label>
             <Input type="number" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">現在の体重 (kg)</Label>
             <Input type="number" inputMode="decimal" value={currentWeight} onChange={(e) => setCurrentWeight(e.target.value)} className="h-11" />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">目標体重 (kg)</Label>
             <Input type="number" inputMode="decimal" value={targetWeight} onChange={(e) => setTargetWeight(e.target.value)} className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">期間 (週)</Label>
             <Input type="number" inputMode="numeric" value={targetWeeks} onChange={(e) => setTargetWeeks(e.target.value)} className="h-11" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">活動量</Label>
           <Select value={activity} onValueChange={(v) => setActivity(v as ActivityLevel)}>
             <SelectTrigger className="w-full h-11">

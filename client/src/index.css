@@ -218,6 +218,9 @@
     text-transform: uppercase;
     color: oklch(0.62 0.03 220);
     font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.4;
+    display: block;
+    margin-bottom: 0.375rem; /* 6px — ensures label never touches input border */
   }
 
   /* ── Nutrient color helpers ── */
@@ -277,6 +280,9 @@
     text-transform: uppercase;
     color: oklch(0.62 0.03 220);
     font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.4;
+    display: block;
+    margin-bottom: 0.375rem;
   }
   .tracking-wider-jp { letter-spacing: 0.08em; }
 }

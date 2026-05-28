@@ -83,11 +83,11 @@ export default function Workouts() {
       {/* 入力フォーム */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">日付</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">強度</Label>
             <Select value={intensity} onValueChange={(v) => setIntensity(v as typeof intensity)}>
               <SelectTrigger className="w-full h-11">
@@ -102,7 +102,7 @@ export default function Workouts() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">種目</Label>
           <Input
             value={activity}
@@ -113,26 +113,26 @@ export default function Workouts() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">重量(kg)</Label>
             <Input type="number" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="70" className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">回数</Label>
             <Input type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="10" className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">セット</Label>
             <Input type="number" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} placeholder="3" className="h-11" />
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">時間（分・有酸素の場合）</Label>
           <Input type="number" inputMode="numeric" value={durationMin} onChange={(e) => setDurationMin(e.target.value)} placeholder="30" className="h-11" />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">メモ（任意）</Label>
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} className="resize-none" />
         </div>

@@ -98,7 +98,7 @@ export default function Photos() {
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         <div className="section-label">写真を追加</div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">日付</Label>
             <Input
               type="date"
@@ -107,7 +107,7 @@ export default function Photos() {
               className="h-11"
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">体重 (kg・任意)</Label>
             <Input
               type="number"
@@ -120,7 +120,7 @@ export default function Photos() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">メモ（任意）</Label>
           <Input
             value={note}
@@ -162,7 +162,7 @@ export default function Photos() {
           <div className="section-label">ビフォーアフター比較</div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="section-label">Before</Label>
               <Select value={beforeId} onValueChange={setBeforeId}>
                 <SelectTrigger className="w-full h-11">
@@ -177,7 +177,7 @@ export default function Photos() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="section-label">After</Label>
               <Select value={afterId} onValueChange={setAfterId}>
                 <SelectTrigger className="w-full h-11">

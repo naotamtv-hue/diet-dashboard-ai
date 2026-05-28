@@ -166,11 +166,11 @@ export default function Weight() {
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         <div className="section-label">体重を記録</div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">日付</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">体重 (kg)</Label>
             <Input
               type="number"

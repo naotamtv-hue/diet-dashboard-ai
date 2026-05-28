@@ -264,11 +264,11 @@ export default function Meals() {
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         {/* 日付・区分 */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">日付</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11" />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">区分</Label>
             <Select value={mealType} onValueChange={(v) => setMealType(v as typeof mealType)}>
               <SelectTrigger className="w-full h-11">
@@ -441,7 +441,7 @@ export default function Meals() {
 
 function NumField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label className="section-label">{label}</Label>
       <Input inputMode="decimal" type="number" value={value} onChange={(e) => onChange(e.target.value)} className="h-11" />
     </div>

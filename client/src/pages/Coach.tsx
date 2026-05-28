@@ -84,7 +84,7 @@ export default function Coach() {
       {/* フォーム */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">経験レベル</Label>
             <Select value={experience} onValueChange={(v) => setExperience(v as Experience)}>
               <SelectTrigger className="w-full h-11">
@@ -97,7 +97,7 @@ export default function Coach() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="section-label">頻度（日/週）</Label>
             <Input
               type="number"
@@ -111,7 +111,7 @@ export default function Coach() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">トレーニング環境</Label>
           <Select value={environment} onValueChange={(v) => setEnvironment(v as Environment)}>
             <SelectTrigger className="w-full h-11">
@@ -125,7 +125,7 @@ export default function Coach() {
           </Select>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">注力したい部位（任意）</Label>
           <Input
             value={focusArea}
@@ -135,7 +135,7 @@ export default function Coach() {
           />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="section-label">既往症・痛み（任意）</Label>
           <Textarea
             rows={2}

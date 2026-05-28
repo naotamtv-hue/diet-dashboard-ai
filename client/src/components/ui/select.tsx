@@ -37,14 +37,13 @@ function SelectTrigger({
       className={cn(
         [
           "flex w-fit items-center justify-between gap-2 whitespace-nowrap text-sm",
-          "rounded-xl border border-border/60 bg-white/60 backdrop-blur-sm",
+          "rounded-xl border border-border bg-input",
           "px-3.5 py-2 data-[size=default]:h-10 data-[size=sm]:h-8",
-          "text-foreground data-[placeholder]:text-muted-foreground/60",
+          "text-foreground data-[placeholder]:text-muted-foreground/50",
           "[&_svg:not([class*='text-'])]:text-muted-foreground",
-          "shadow-[0_1px_2px_oklch(0.35_0.08_290/0.04),inset_0_1px_0_oklch(1_0_0/0.8)]",
           "transition-[border-color,box-shadow] duration-150 outline-none",
-          "focus:bg-white/80 focus:border-primary/50",
-          "focus:shadow-[0_0_0_3px_oklch(0.55_0.1_290/0.12)]",
+          "focus:border-primary/70",
+          "focus:shadow-[0_0_0_3px_oklch(0.62_0.18_220/0.15)]",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "aria-invalid:border-destructive",
           "*:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2",
