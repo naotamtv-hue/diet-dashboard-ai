@@ -11,7 +11,8 @@ const root = join(__dirname, "..");
 const drizzleDir = join(root, "drizzle");
 
 const url = process.env.DATABASE_URL || "file:local.db";
-const client = createClient({ url });
+const authToken = process.env.DATABASE_AUTH_TOKEN;
+const client = createClient({ url, ...(authToken ? { authToken } : {}) });
 
 function splitStatements(sql) {
   // drizzle-kit は "--> statement-breakpoint" で文を区切る

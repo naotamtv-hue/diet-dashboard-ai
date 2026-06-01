@@ -30,7 +30,11 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = createClient({ url: process.env.DATABASE_URL });
+      // ローカルは file: URL のみ、リモート(Turso等)は authToken も渡す
+      const client = createClient({
+        url: process.env.DATABASE_URL,
+        ...(process.env.DATABASE_AUTH_TOKEN ? { authToken: process.env.DATABASE_AUTH_TOKEN } : {}),
+      });
       _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
