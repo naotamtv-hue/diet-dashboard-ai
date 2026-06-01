@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { todayDateString } from "@/lib/labels";
 import { trpc } from "@/lib/trpc";
+import { weightMotivation } from "@/lib/motivation";
 import { Loader2, Plus, Trash2, TrendingDown } from "lucide-react";
 import { useState } from "react";
 import {
@@ -75,7 +76,7 @@ export default function Weight() {
     await addM.mutateAsync({ date, weightKg: w, note: note || null });
     setWeight("");
     setNote("");
-    toast.success("体重を記録しました");
+    toast.success(weightMotivation(), { duration: 4500 });
   };
 
   return (

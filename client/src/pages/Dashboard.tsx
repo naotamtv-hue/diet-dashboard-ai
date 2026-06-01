@@ -156,6 +156,13 @@ export default function Dashboard() {
   const weightFirstQ = trpc.weights.first.useQuery();
   const workoutsQ = trpc.workouts.listByDate.useQuery({ date: today });
   const photosQ = trpc.bodyPhotos.list.useQuery();
+  const streakQ = trpc.stats.streak.useQuery({ today });
+  const weeklyQ = trpc.stats.weeklyReview.useQuery({ today });
+  const weightsListQ = trpc.weights.list.useQuery();
+  const adviceQ = trpc.coach.dailyAdvice.useQuery(
+    { today },
+    { staleTime: 1000 * 60 * 30, refetchOnWindowFocus: false, retry: false, enabled: !!goalQ.data }
+  );
 
   const goal = goalQ.data;
   const summary = summaryQ.data;
@@ -184,6 +191,35 @@ export default function Dashboard() {
   const lossPct = Math.min(100, Math.round((lossDone / lossNeeded) * 100));
   const remainKg = Math.max(0, currentW - targetW);
 
+  // 運動消費は摂取枠に足さない（目標は活動量込みのTDEEベースのため二重計上を防ぐ）。
+  const remainingBudget = Math.max(0, targetCal - consumed);
+
+  // 体重トレンドから目標到達を予測（線形回帰）。
+  const eta = useMemo(() => {
+    const pts = (weightsListQ.data ?? [])
+      .map((w) => ({ t: Date.parse(w.recordDate), kg: Number(w.weightKg) }))
+      .filter((p) => !Number.isNaN(p.t) && !Number.isNaN(p.kg));
+    if (pts.length < 2 || !targetW) return null;
+    const t0 = pts[0].t;
+    const xs = pts.map((p) => (p.t - t0) / 86400000);
+    const ys = pts.map((p) => p.kg);
+    const n = xs.length;
+    const sx = xs.reduce((a, b) => a + b, 0);
+    const sy = ys.reduce((a, b) => a + b, 0);
+    const sxx = xs.reduce((a, b) => a + b * b, 0);
+    const sxy = xs.reduce((a, b, i) => a + b * ys[i], 0);
+    const denom = n * sxx - sx * sx;
+    if (denom === 0) return null;
+    const slope = (n * sxy - sx * sy) / denom; // kg/日
+    const lastKg = ys[ys.length - 1];
+    const perWeek = slope * 7;
+    if (lastKg <= targetW) return { kind: "reached" as const, perWeek };
+    if (slope >= -0.0015) return { kind: "stalled" as const, perWeek };
+    const days = Math.round((lastKg - targetW) / -slope);
+    const etaDate = new Date(Date.now() + days * 86400000);
+    return { kind: "down" as const, perWeek, days, etaDate };
+  }, [weightsListQ.data, targetW]);
+
   return (
     <div className="space-y-4 pb-4">
       {/* Page Header */}
@@ -210,6 +246,36 @@ export default function Dashboard() {
               設定する
             </Button>
           </Link>
+        </div>
+      )}
+
+      {/* ── 連続記録ストリーク ＋ 今日のひとことアドバイス ── */}
+      {((streakQ.data && streakQ.data.streak > 0) || adviceQ.data?.advice || adviceQ.isLoading) && (
+        <div
+          className="rounded-xl px-4 py-4 space-y-3"
+          style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+        >
+          {streakQ.data && streakQ.data.streak > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xl leading-none">🔥</span>
+              <span className="text-sm font-bold text-white">{streakQ.data.streak}日連続で記録中！</span>
+              {!streakQ.data.recordedToday && (
+                <span className="text-[11px] text-muted-foreground ml-auto">今日も記録して継続しよう</span>
+              )}
+            </div>
+          )}
+          {adviceQ.isLoading && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Sparkles className="h-4 w-4 animate-pulse" style={{ color: "oklch(0.68 0.14 290)" }} />
+              <span className="text-xs">今日のアドバイスを考えています…</span>
+            </div>
+          )}
+          {adviceQ.data?.advice && (
+            <div className="flex items-start gap-2">
+              <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.68 0.14 290)" }} />
+              <p className="text-sm text-white leading-relaxed">{adviceQ.data.advice}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -244,10 +310,15 @@ export default function Dashboard() {
             <div
               className="mt-2 pt-2 border-t border-border"
             >
-              <div className="text-xs text-muted-foreground">残り</div>
+              <div className="text-xs text-muted-foreground">あと食べられる</div>
               <div className="text-xl font-bold text-white">
-                {Math.max(0, targetCal - consumed + burned)} kcal
+                {remainingBudget} kcal
               </div>
+              {burned > 0 && (
+                <div className="text-[11px] mt-0.5" style={{ color: "oklch(0.72 0.18 155)" }}>
+                  運動でさらに −{Math.round(burned)}kcalの貯金🔥
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -308,6 +379,30 @@ export default function Dashboard() {
               style={{ width: `${lossPct}%`, background: "linear-gradient(90deg, oklch(0.62 0.18 220), oklch(0.72 0.18 155))" }}
             />
           </div>
+
+          {/* 目標到達予測 */}
+          {eta && (
+            <div
+              className="mt-3 rounded-lg px-3 py-2.5 flex items-start gap-2"
+              style={{ background: "oklch(0.24 0.04 240)" }}
+            >
+              <TrendingDown className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.18 155)" }} />
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                {eta.kind === "down" && (
+                  <>
+                    このペースなら{" "}
+                    <span className="font-bold text-white">
+                      {eta.etaDate.getFullYear()}年{eta.etaDate.getMonth() + 1}月{eta.etaDate.getDate()}日
+                    </span>{" "}
+                    頃に目標達成（週{Math.abs(eta.perWeek).toFixed(1)}kgペース）
+                  </>
+                )}
+                {eta.kind === "reached" && <span className="text-white font-semibold">目標体重に到達しています！🎉</span>}
+                {eta.kind === "stalled" && "最近は横ばい。食事か運動を少し見直すと動き出します"}
+              </div>
+            </div>
+          )}
+
           {/* BMR / TDEE */}
           <div className="grid grid-cols-3 gap-2 mt-4">
             {[
@@ -365,6 +460,49 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── 今週のふりかえり ── */}
+      {weeklyQ.data && weeklyQ.data.daysWithMeals > 0 && (
+        <div
+          className="rounded-xl px-5 py-5"
+          style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+        >
+          <div className="section-label mb-3">今週のふりかえり（直近7日）</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.24 0.04 240)" }}>
+              <div className="text-[10px] font-medium text-muted-foreground">平均摂取</div>
+              <div className="text-base font-bold text-white mt-0.5">{weeklyQ.data.avgCalories}</div>
+              <div className="text-[10px] text-muted-foreground">kcal/日</div>
+            </div>
+            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.24 0.04 240)" }}>
+              <div className="text-[10px] font-medium text-muted-foreground">目標達成</div>
+              <div className="text-base font-bold text-white mt-0.5">
+                {weeklyQ.data.target ? weeklyQ.data.goalMetDays : "—"}
+              </div>
+              <div className="text-[10px] text-muted-foreground">{weeklyQ.data.target ? "日" : "目標未設定"}</div>
+            </div>
+            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.24 0.04 240)" }}>
+              <div className="text-[10px] font-medium text-muted-foreground">体重変化</div>
+              <div
+                className="text-base font-bold mt-0.5"
+                style={{
+                  color:
+                    weeklyQ.data.weightChange == null
+                      ? "white"
+                      : weeklyQ.data.weightChange <= 0
+                        ? "oklch(0.72 0.18 155)"
+                        : "oklch(0.75 0.18 55)",
+                }}
+              >
+                {weeklyQ.data.weightChange == null
+                  ? "—"
+                  : `${weeklyQ.data.weightChange > 0 ? "+" : ""}${weeklyQ.data.weightChange.toFixed(1)}`}
+              </div>
+              <div className="text-[10px] text-muted-foreground">kg</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── クイックアクセス ── */}
       <div>
         <div className="section-label mb-3">クイックアクセス</div>
@@ -373,7 +511,7 @@ export default function Dashboard() {
           <QuickCard to="/weight"      icon={<CalendarHeart className="h-4 w-4" />} title="体重を記録" sub={`最新 ${currentW ? currentW.toFixed(1) + " kg" : "未記録"}`} accent="oklch(0.72 0.18 155)" />
           <QuickCard to="/workouts"    icon={<Dumbbell className="h-4 w-4" />}    title="運動を記録"   sub={`今日 ${Math.round(burned)} kcal 消費`} accent="oklch(0.75 0.18 55)" />
           <QuickCard to="/coach"       icon={<Sparkles className="h-4 w-4" />}    title="AIコーチ"     sub="週次メニュー提案"                  accent="oklch(0.68 0.14 290)" />
-          <QuickCard to="/convenience" icon={<ShoppingBag className="h-4 w-4" />} title="コンビニ提案" sub={`残 ${Math.max(0, targetCal - consumed + burned)} kcal`} accent="oklch(0.62 0.18 220)" />
+          <QuickCard to="/convenience" icon={<ShoppingBag className="h-4 w-4" />} title="コンビニ提案" sub={`残 ${remainingBudget} kcal`} accent="oklch(0.62 0.18 220)" />
           <QuickCard to="/photos"      icon={<Camera className="h-4 w-4" />}      title="体型写真"     sub={`${photosQ.data?.length ?? 0}枚 記録中`} accent="oklch(0.72 0.18 155)" />
         </div>
       </div>

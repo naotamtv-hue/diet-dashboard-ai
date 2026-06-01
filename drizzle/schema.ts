@@ -1,35 +1,28 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, date, index, customType } from "drizzle-orm/mysql-core";
+import { integer, sqliteTable, text, index } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-// MySQL DATE returns ISO YYYY-MM-DD strings; declare a string-mode variant to keep typings consistent.
-const dateStr = (name: string) =>
-  customType<{ data: string; driverData: string }>({
-    dataType() {
-      return "date";
-    },
-    fromDriver(value: any) {
-      if (value instanceof Date) {
-        const y = value.getFullYear();
-        const m = String(value.getMonth() + 1).padStart(2, "0");
-        const d = String(value.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
-      }
-      return String(value);
-    },
-  })(name);
+// Helpers to keep the previous MySQL semantics:
+// - decimal / numeric values were stored & read as strings ("0", "12.3"), so we keep them as text.
+// - DATE values were kept as "YYYY-MM-DD" strings, so they are plain text columns too.
+// - timestamps are stored as integer epoch (seconds) and surfaced as Date objects (mode: "timestamp").
+//   A DB-level default keeps raw SQL inserts (e.g. seed data) working without specifying the column.
+const ts = (name: string) =>
+  integer(name, { mode: "timestamp" }).notNull().default(sql`(unixepoch())`);
 
 /**
  * Core user table backing auth flow.
  */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  openId: text("openId").notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  email: text("email"),
+  passwordHash: text("passwordHash"),
+  loginMethod: text("loginMethod"),
+  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+  createdAt: ts("createdAt"),
+  updatedAt: ts("updatedAt").$onUpdate(() => new Date()),
+  lastSignedIn: ts("lastSignedIn"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -39,20 +32,20 @@ export type InsertUser = typeof users.$inferInsert;
  * 食事記録テーブル
  * mealType: breakfast(朝) / lunch(昼) / dinner(夜) / snack(間食)
  */
-export const meals = mysqlTable(
+export const meals = sqliteTable(
   "meals",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    mealDate: dateStr("mealDate").notNull(),
-    mealType: mysqlEnum("mealType", ["breakfast", "lunch", "dinner", "snack"]).notNull(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    mealDate: text("mealDate").notNull(),
+    mealType: text("mealType", { enum: ["breakfast", "lunch", "dinner", "snack"] }).notNull(),
     description: text("description"),
     imageUrl: text("imageUrl"),
-    calories: decimal("calories", { precision: 7, scale: 1 }).notNull().default("0"),
-    proteinG: decimal("proteinG", { precision: 6, scale: 1 }).notNull().default("0"),
-    fatG: decimal("fatG", { precision: 6, scale: 1 }).notNull().default("0"),
-    carbsG: decimal("carbsG", { precision: 6, scale: 1 }).notNull().default("0"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    calories: text("calories").notNull().default("0"),
+    proteinG: text("proteinG").notNull().default("0"),
+    fatG: text("fatG").notNull().default("0"),
+    carbsG: text("carbsG").notNull().default("0"),
+    createdAt: ts("createdAt"),
   },
   (t) => ({
     userDateIdx: index("meals_user_date_idx").on(t.userId, t.mealDate),
@@ -65,15 +58,15 @@ export type InsertMeal = typeof meals.$inferInsert;
 /**
  * 体重記録テーブル
  */
-export const weights = mysqlTable(
+export const weights = sqliteTable(
   "weights",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    recordDate: dateStr("recordDate").notNull(),
-    weightKg: decimal("weightKg", { precision: 5, scale: 2 }).notNull(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    recordDate: text("recordDate").notNull(),
+    weightKg: text("weightKg").notNull(),
     note: text("note"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    createdAt: ts("createdAt"),
   },
   (t) => ({
     userDateIdx: index("weights_user_date_idx").on(t.userId, t.recordDate),
@@ -87,21 +80,21 @@ export type InsertWeight = typeof weights.$inferInsert;
  * 運動・トレーニング記録テーブル
  * intensity: low(軽い) / medium(普通) / high(激しい)
  */
-export const workouts = mysqlTable(
+export const workouts = sqliteTable(
   "workouts",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    recordDate: dateStr("recordDate").notNull(),
-    activity: varchar("activity", { length: 120 }).notNull(),
-    durationMin: int("durationMin").notNull().default(0),
-    intensity: mysqlEnum("intensity", ["low", "medium", "high"]).notNull().default("medium"),
-    weightKg: decimal("weightKg", { precision: 6, scale: 2 }),
-    reps: int("reps"),
-    sets: int("sets"),
-    caloriesBurned: decimal("caloriesBurned", { precision: 7, scale: 1 }),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    recordDate: text("recordDate").notNull(),
+    activity: text("activity").notNull(),
+    durationMin: integer("durationMin").notNull().default(0),
+    intensity: text("intensity", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
+    weightKg: text("weightKg"),
+    reps: integer("reps"),
+    sets: integer("sets"),
+    caloriesBurned: text("caloriesBurned"),
     note: text("note"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    createdAt: ts("createdAt"),
   },
   (t) => ({
     userDateIdx: index("workouts_user_date_idx").on(t.userId, t.recordDate),
@@ -117,28 +110,24 @@ export type InsertWorkout = typeof workouts.$inferInsert;
  * activityLevel:
  *   sedentary(1.2) / light(1.375) / moderate(1.55) / active(1.725) / veryActive(1.9)
  */
-export const goals = mysqlTable("goals", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
-  gender: mysqlEnum("gender", ["male", "female"]).notNull(),
-  age: int("age").notNull(),
-  heightCm: decimal("heightCm", { precision: 5, scale: 1 }).notNull(),
-  currentWeightKg: decimal("currentWeightKg", { precision: 5, scale: 2 }).notNull(),
-  targetWeightKg: decimal("targetWeightKg", { precision: 5, scale: 2 }).notNull(),
-  targetWeeks: int("targetWeeks").notNull(),
-  activityLevel: mysqlEnum("activityLevel", [
-    "sedentary",
-    "light",
-    "moderate",
-    "active",
-    "veryActive",
-  ]).notNull(),
-  bmr: decimal("bmr", { precision: 7, scale: 1 }).notNull(),
-  tdee: decimal("tdee", { precision: 7, scale: 1 }).notNull(),
-  targetCalories: decimal("targetCalories", { precision: 7, scale: 1 }).notNull(),
-  weeklyLossKg: decimal("weeklyLossKg", { precision: 4, scale: 2 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+export const goals = sqliteTable("goals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull().unique(),
+  gender: text("gender", { enum: ["male", "female"] }).notNull(),
+  age: integer("age").notNull(),
+  heightCm: text("heightCm").notNull(),
+  currentWeightKg: text("currentWeightKg").notNull(),
+  targetWeightKg: text("targetWeightKg").notNull(),
+  targetWeeks: integer("targetWeeks").notNull(),
+  activityLevel: text("activityLevel", {
+    enum: ["sedentary", "light", "moderate", "active", "veryActive"],
+  }).notNull(),
+  bmr: text("bmr").notNull(),
+  tdee: text("tdee").notNull(),
+  targetCalories: text("targetCalories").notNull(),
+  weeklyLossKg: text("weeklyLossKg").notNull(),
+  createdAt: ts("createdAt"),
+  updatedAt: ts("updatedAt").$onUpdate(() => new Date()),
 });
 
 export type Goal = typeof goals.$inferSelect;
@@ -151,31 +140,33 @@ export type InsertGoal = typeof goals.$inferInsert;
  *           noodle(麺類) / hotsnack(ホットスナック) / drink(ドリンク) /
  *           dessert(デザート) / sideDish(惣菜) / proteinSnack(プロテイン系)
  */
-export const convenienceItems = mysqlTable(
+export const convenienceItems = sqliteTable(
   "convenience_items",
   {
-    id: int("id").autoincrement().primaryKey(),
-    chain: mysqlEnum("chain", ["seven", "familymart", "lawson"]).notNull(),
-    category: mysqlEnum("category", [
-      "bento",
-      "onigiri",
-      "bread",
-      "salad",
-      "noodle",
-      "hotsnack",
-      "drink",
-      "dessert",
-      "sideDish",
-      "proteinSnack",
-    ]).notNull(),
-    name: varchar("name", { length: 160 }).notNull(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    chain: text("chain", { enum: ["seven", "familymart", "lawson"] }).notNull(),
+    category: text("category", {
+      enum: [
+        "bento",
+        "onigiri",
+        "bread",
+        "salad",
+        "noodle",
+        "hotsnack",
+        "drink",
+        "dessert",
+        "sideDish",
+        "proteinSnack",
+      ],
+    }).notNull(),
+    name: text("name").notNull(),
     description: text("description"),
-    calories: decimal("calories", { precision: 7, scale: 1 }).notNull(),
-    proteinG: decimal("proteinG", { precision: 6, scale: 1 }).notNull(),
-    fatG: decimal("fatG", { precision: 6, scale: 1 }).notNull(),
-    carbsG: decimal("carbsG", { precision: 6, scale: 1 }).notNull(),
-    priceYen: int("priceYen"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    calories: text("calories").notNull(),
+    proteinG: text("proteinG").notNull(),
+    fatG: text("fatG").notNull(),
+    carbsG: text("carbsG").notNull(),
+    priceYen: integer("priceYen"),
+    createdAt: ts("createdAt"),
   },
   (t) => ({
     chainCategoryIdx: index("conv_chain_category_idx").on(t.chain, t.category),
@@ -188,16 +179,16 @@ export type InsertConvenienceItem = typeof convenienceItems.$inferInsert;
 /**
  * 体型写真記録テーブル
  */
-export const bodyPhotos = mysqlTable(
+export const bodyPhotos = sqliteTable(
   "body_photos",
   {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    recordDate: dateStr("recordDate").notNull(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    recordDate: text("recordDate").notNull(),
     imageUrl: text("imageUrl").notNull(),
-    weightKg: decimal("weightKg", { precision: 5, scale: 2 }),
+    weightKg: text("weightKg"),
     note: text("note"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    createdAt: ts("createdAt"),
   },
   (t) => ({
     userDateIdx: index("body_photos_user_date_idx").on(t.userId, t.recordDate),
@@ -211,15 +202,60 @@ export type InsertBodyPhoto = typeof bodyPhotos.$inferInsert;
  * リマインダー設定テーブル（ユーザーごとに1件）
  * mealReminderTime / weightReminderTime: HH:mm 形式
  */
-export const reminderSettings = mysqlTable("reminder_settings", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
-  mealEnabled: int("mealEnabled").notNull().default(0),
-  mealReminderTime: varchar("mealReminderTime", { length: 5 }).notNull().default("20:00"),
-  weightEnabled: int("weightEnabled").notNull().default(0),
-  weightReminderTime: varchar("weightReminderTime", { length: 5 }).notNull().default("08:00"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+export const reminderSettings = sqliteTable("reminder_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull().unique(),
+  mealEnabled: integer("mealEnabled").notNull().default(0),
+  mealReminderTime: text("mealReminderTime").notNull().default("20:00"),
+  weightEnabled: integer("weightEnabled").notNull().default(0),
+  weightReminderTime: text("weightReminderTime").notNull().default("08:00"),
+  updatedAt: ts("updatedAt").$onUpdate(() => new Date()),
 });
 
 export type ReminderSettings = typeof reminderSettings.$inferSelect;
 export type InsertReminderSettings = typeof reminderSettings.$inferInsert;
+
+/* ===== 筋トレ（種目マスタ＋セット記録） ===== */
+
+export const BODY_PARTS = ["chest", "back", "legs", "shoulders", "arms", "abs", "cardio", "other"] as const;
+
+/** 種目マスタ（ユーザーごと・部位別）。 */
+export const exercises = sqliteTable(
+  "exercises",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    bodyPart: text("bodyPart", { enum: BODY_PARTS }).notNull(),
+    name: text("name").notNull(),
+    createdAt: ts("createdAt"),
+  },
+  (t) => ({
+    userIdx: index("exercises_user_idx").on(t.userId, t.bodyPart),
+  })
+);
+
+export type Exercise = typeof exercises.$inferSelect;
+export type InsertExercise = typeof exercises.$inferInsert;
+
+/** 1セットの記録（重量×回数）。合計負荷量 = Σ weightKg×reps。 */
+export const workoutSets = sqliteTable(
+  "workout_sets",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    recordDate: text("recordDate").notNull(),
+    bodyPart: text("bodyPart", { enum: BODY_PARTS }).notNull(),
+    exerciseName: text("exerciseName").notNull(),
+    setNo: integer("setNo").notNull(),
+    weightKg: text("weightKg"),
+    reps: integer("reps"),
+    memo: text("memo"),
+    createdAt: ts("createdAt"),
+  },
+  (t) => ({
+    userDateIdx: index("workout_sets_user_date_idx").on(t.userId, t.recordDate),
+  })
+);
+
+export type WorkoutSet = typeof workoutSets.$inferSelect;
+export type InsertWorkoutSet = typeof workoutSets.$inferInsert;

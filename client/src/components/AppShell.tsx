@@ -21,9 +21,11 @@ import {
   Bell,
   ChevronRight,
 } from "lucide-react";
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { trpc } from "@/lib/trpc";
 import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 
 /* ─────────────────────────────────────────────
@@ -315,19 +317,125 @@ function LandingPage() {
           ))}
         </div>
 
-        {/* CTA */}
-        <Button
-          size="lg"
-          className="w-full h-14 text-base font-bold rounded-xl shadow-lg"
-          style={{ background: "oklch(0.62 0.18 220)" }}
-          onClick={() => { window.location.href = getLoginUrl(); }}
-        >
-          無料で始める
-        </Button>
-        <p className="text-xs text-muted-foreground text-center mt-3">
-          Manus アカウントでサインインするだけで利用できます
-        </p>
+        {/* Auth card */}
+        <AuthCard />
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Auth card — email + password sign in / sign up
+───────────────────────────────────────────── */
+function AuthCard() {
+  const utils = trpc.useUtils();
+  const [, navigate] = useLocation();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: async () => {
+      setError(null);
+      await utils.auth.me.invalidate();
+    },
+    onError: (e) => setError(e.message),
+  });
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: async () => {
+      setError(null);
+      // 新規登録直後は目標設定へ誘導（最初に目標を入れると以降の数字が活きる）
+      navigate("/goal");
+      await utils.auth.me.invalidate();
+    },
+    onError: (e) => setError(e.message),
+  });
+
+  const pending = loginMutation.isPending || registerMutation.isPending;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (mode === "login") {
+      loginMutation.mutate({ email, password });
+    } else {
+      registerMutation.mutate({ email, password, name: name || undefined });
+    }
+  };
+
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.28 0.04 240)" }}
+    >
+      {/* Tabs */}
+      <div className="grid grid-cols-2 gap-1 p-1 mb-5 rounded-xl" style={{ background: "oklch(0.16 0.04 240)" }}>
+        {(["login", "register"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => { setMode(m); setError(null); }}
+            className="py-2 rounded-lg text-sm font-semibold transition-colors"
+            style={
+              mode === m
+                ? { background: "oklch(0.62 0.18 220)", color: "white" }
+                : { color: "oklch(0.65 0.03 220)" }
+            }
+          >
+            {m === "login" ? "ログイン" : "新規登録"}
+          </button>
+        ))}
+      </div>
+
+      <form onSubmit={submit} className="space-y-3">
+        {mode === "register" && (
+          <Input
+            type="text"
+            placeholder="ニックネーム（任意）"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="nickname"
+          />
+        )}
+        <Input
+          type="email"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          required
+        />
+        <Input
+          type="password"
+          placeholder={mode === "register" ? "パスワード（6文字以上）" : "パスワード"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete={mode === "register" ? "new-password" : "current-password"}
+          required
+        />
+
+        {error && (
+          <p className="text-xs text-center" style={{ color: "oklch(0.7 0.18 25)" }}>
+            {error}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          size="lg"
+          disabled={pending}
+          className="w-full h-13 text-base font-bold rounded-xl shadow-lg"
+          style={{ background: "oklch(0.62 0.18 220)" }}
+        >
+          {pending ? "処理中..." : mode === "login" ? "ログイン" : "無料で始める"}
+        </Button>
+      </form>
+
+      <p className="text-xs text-muted-foreground text-center mt-3">
+        {mode === "login" ? "アカウントをお持ちでない方は「新規登録」へ" : "登録するだけですぐに使えます"}
+      </p>
     </div>
   );
 }

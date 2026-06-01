@@ -39,10 +39,14 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
+
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    // SameSite=None requires Secure; on local http the browser would silently
+    // drop the session cookie. Same-origin app, so "lax" is fine for local dev.
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import PwaInstallHint from "@/components/PwaInstallHint";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -11,6 +12,7 @@ import Meals from "@/pages/Meals";
 import NotFound from "@/pages/NotFound";
 import Photos from "@/pages/Photos";
 import Settings from "@/pages/Settings";
+import Strength from "@/pages/Strength";
 import Weight from "@/pages/Weight";
 import Workouts from "@/pages/Workouts";
 import CalendarView from "@/pages/CalendarView";
@@ -23,6 +25,7 @@ function Router() {
       <Route path="/meals" component={Meals} />
       <Route path="/weight" component={Weight} />
       <Route path="/workouts" component={Workouts} />
+      <Route path="/strength" component={Strength} />
       <Route path="/coach" component={Coach} />
       <Route path="/convenience" component={Convenience} />
       <Route path="/photos" component={Photos} />
@@ -41,6 +44,7 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
+          <PwaInstallHint />
           <AppShell>
             <Router />
           </AppShell>

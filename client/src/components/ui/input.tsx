@@ -33,6 +33,11 @@ function Input({
     },
   });
 
+  // iOS Safari は date/time 系の input に独自のフォーム装飾（二重枠・余白）を付ける。
+  // appearance を消し、値を左寄せにして枠の被りや崩れを防ぐ。
+  const isDateLike =
+    type === "date" || type === "time" || type === "datetime-local" || type === "month";
+
   return (
     <input
       type={type}
@@ -50,6 +55,9 @@ function Input({
         "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
         // File input
         "file:text-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium",
+        // Date / time (iOS) — remove native chrome that causes double borders & misalignment
+        isDateLike &&
+          "appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:m-0 [&::-webkit-calendar-picker-indicator]:opacity-70",
         // Invalid
         "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
         className

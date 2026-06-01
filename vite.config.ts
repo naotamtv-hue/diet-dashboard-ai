@@ -171,13 +171,11 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: [
-      ".manuspre.computer",
-      ".manus.computer",
-      ".manus-asia.computer",
-      ".manuscomputer.ai",
-      ".manusvm.computer",
       "localhost",
       "127.0.0.1",
+      // 同一Wi-Fi上のiPhone等からLAN IPでプレビューするため許可
+      "192.168.1.64",
+      ".local",
     ],
     fs: {
       strict: true,

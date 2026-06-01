@@ -1,26 +1,45 @@
 /**
- * gpt-4.1-mini Vision を用いた食事写真解析と、コンビニ商品の組み合わせ提案
+ * AI（Google Gemini / OpenAI互換エンドポイント）による食事写真解析・
+ * 食べ物/商品名からの栄養推定・コンビニ商品の組み合わせ提案。
  */
 import { ENV } from "./_core/env";
 
-const FORGE_URL = (ENV.forgeApiUrl || "https://forge.manus.im").replace(/\/+$/, "");
+// OpenAI互換のベースURL。Geminiの場合は .../v1beta/openai を指す。
+const FORGE_URL = (ENV.forgeApiUrl || "https://generativelanguage.googleapis.com/v1beta/openai").replace(
+  /\/+$/,
+  ""
+);
 const FORGE_KEY = ENV.forgeApiKey;
+// 使用モデル（環境変数で差し替え可能）。
+export const AI_MODEL = process.env.AI_MODEL || "gemini-2.5-flash";
 
 async function chat(payload: Record<string, unknown>) {
-  if (!FORGE_KEY) throw new Error("OPENAI_API_KEY (forge) is not configured");
-  const resp = await fetch(`${FORGE_URL}/v1/chat/completions`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${FORGE_KEY}`,
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!resp.ok) {
+  if (!FORGE_KEY) throw new Error("AI APIキーが未設定です（.env の BUILT_IN_FORGE_API_KEY）");
+  // Gemini 2.5系は「思考」トークンを消費し、max_tokens内で答えが途中で切れることがある。
+  // 構造化された短い回答なので思考はオフにし、応答を確実に完結させる。
+  const body: Record<string, unknown> = { reasoning_effort: "none", ...payload };
+  let lastErr: Error | null = null;
+  // 一時的な混雑(429/500/503)は短い待機をはさんで再試行する。
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const resp = await fetch(`${FORGE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${FORGE_KEY}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (resp.ok) return (await resp.json()) as any;
+    const status = resp.status;
     const text = await resp.text();
-    throw new Error(`LLM error ${resp.status}: ${text}`);
+    lastErr = new Error(`LLM error ${status}: ${text}`);
+    if (status === 429 || status === 500 || status === 503) {
+      await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+      continue;
+    }
+    throw lastErr;
   }
-  return (await resp.json()) as any;
+  throw lastErr ?? new Error("LLM request failed");
 }
 
 export type MealAnalysisResult = {
@@ -47,7 +66,7 @@ export async function analyzeMealImage(imageUrlOrDataUrl: string): Promise<MealA
 画像が食事でない、または推定不能な場合は calories などを 0 にして description に理由を書いてください。`;
 
   const payload = {
-    model: "gpt-4.1-mini",
+    model: AI_MODEL,
     messages: [
       { role: "system", content: system },
       {
@@ -58,7 +77,7 @@ export async function analyzeMealImage(imageUrlOrDataUrl: string): Promise<MealA
         ],
       },
     ],
-    max_tokens: 600,
+    max_tokens: 1024,
     response_format: {
       type: "json_schema",
       json_schema: {
@@ -96,6 +115,82 @@ export async function analyzeMealImage(imageUrlOrDataUrl: string): Promise<MealA
     fatG: Math.max(0, Number(Number(parsed.fatG || 0).toFixed(1))),
     carbsG: Math.max(0, Number(Number(parsed.carbsG || 0).toFixed(1))),
     confidence: (parsed.confidence as any) || "medium",
+  };
+}
+
+/** AI応答のJSONを頑丈にパースする（```json フェンスや前後の文字を許容）。 */
+function parseJsonLoose<T = any>(content: unknown): T {
+  if (content && typeof content === "object") return content as T;
+  let text = String(content ?? "").trim();
+  // ```json ... ``` フェンスを除去
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) text = fence[1].trim();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // 最初の { から最後の } までを抜き出して再試行
+    const s = text.indexOf("{");
+    const e = text.lastIndexOf("}");
+    if (s >= 0 && e > s) {
+      return JSON.parse(text.slice(s, e + 1)) as T;
+    }
+    throw new Error("AI応答の解析に失敗しました");
+  }
+}
+
+/**
+ * 食べ物・商品名（例:「セブンのからあげ棒」「唐揚げ3個」「ラーメン1杯」）から
+ * おおよそのカロリー・PFCをAIで推定する。写真がなくても記録できるようにする。
+ */
+export async function estimateMealByName(query: string): Promise<MealAnalysisResult> {
+  const system = `あなたは日本の食品栄養の専門家です。ユーザーが入力した食べ物・商品名（コンビニ商品・外食・自炊メニュー等を含む）について、日本で一般的な1人前/1個あたりのおおよその栄養価を推定してください。
+- description: 対象の料理・商品名を日本語で簡潔に（例:「セブンイレブン からあげ棒 1本」）。分量が不明なら一般的な1人前を仮定し、その旨を含める。
+- calories: カロリー (kcal, 整数)
+- proteinG: タンパク質 (g, 小数1桁)
+- fatG: 脂質 (g, 小数1桁)
+- carbsG: 炭水化物 (g, 小数1桁)
+- confidence: 確からしさ。固有商品名で広く知られているものは "medium"、一般料理名は "medium"〜"high"、曖昧・不明なものは "low"。
+値はあくまで概算です。食品として解釈できない入力の場合は calories 等を 0 にし、description に理由を書いてください。`;
+
+  const payload = {
+    model: AI_MODEL,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: `次の食べ物のおおよその栄養価を推定してください: ${query}` },
+    ],
+    max_tokens: 1024,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "meal_estimate",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            description: { type: "string" },
+            calories: { type: "number" },
+            proteinG: { type: "number" },
+            fatG: { type: "number" },
+            carbsG: { type: "number" },
+            confidence: { type: "string", enum: ["low", "medium", "high"] },
+          },
+          required: ["description", "calories", "proteinG", "fatG", "carbsG", "confidence"],
+        },
+      },
+    },
+  };
+
+  const data = await chat(payload);
+  const content = data?.choices?.[0]?.message?.content ?? "";
+  const parsed = parseJsonLoose<MealAnalysisResult>(content);
+  return {
+    description: String(parsed.description ?? query),
+    calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
+    proteinG: Math.max(0, Number(Number(parsed.proteinG || 0).toFixed(1))),
+    fatG: Math.max(0, Number(Number(parsed.fatG || 0).toFixed(1))),
+    carbsG: Math.max(0, Number(Number(parsed.carbsG || 0).toFixed(1))),
+    confidence: (parsed.confidence as any) || "low",
   };
 }
 
@@ -154,7 +249,7 @@ export async function suggestConvenienceCombo(params: {
   };
 
   const payload = {
-    model: "gpt-4.1-mini",
+    model: AI_MODEL,
     messages: [
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(user) },
@@ -236,7 +331,7 @@ export async function estimateWorkoutCalories(params: {
 出力は JSON のみで {"caloriesBurned": number, "reasoning": "日本語の根拠1文"} を返してください。`;
 
   const payload = {
-    model: "gpt-4.1-mini",
+    model: AI_MODEL,
     messages: [
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(params) },
@@ -319,7 +414,7 @@ export async function buildTrainerPlan(params: {
 出力は厳密に JSON のみ。`;
 
   const payload = {
-    model: "gpt-4.1-mini",
+    model: AI_MODEL,
     messages: [
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(params) },
@@ -378,4 +473,40 @@ export async function buildTrainerPlan(params: {
   } catch {
     throw new Error("AI応答の解析に失敗しました");
   }
+}
+
+/**
+ * 直近の記録データ（目標・今日の摂取・PFC・体重・連続記録）を踏まえた、
+ * 今日の短いコーチングアドバイスを生成する（1〜2文・日本語）。
+ */
+export async function buildDailyAdvice(context: {
+  targetCalories: number | null;
+  consumedCalories: number;
+  proteinG: number;
+  fatG: number;
+  carbsG: number;
+  targetProteinG: number | null;
+  currentWeightKg: number | null;
+  targetWeightKg: number | null;
+  recentWeightTrendKgPerWeek: number | null;
+  streakDays: number;
+}): Promise<string> {
+  const system = `あなたは日本人向けの優しく前向きな減量コーチです。
+渡されたユーザーの今日の数値を見て、励ましつつ具体的な行動を1つ提案する短いアドバイスを返してください。
+- 日本語で1〜2文、80文字以内
+- 数字を踏まえて具体的に（例:「タンパク質があと30g。鶏むねやプロテインで補うと◎」）
+- 否定や罪悪感を煽らない。続けたくなるトーン。語尾に絵文字を1つ
+- 出力はアドバイス本文のみ（前置き・記号・引用符なし）`;
+
+  const payload = {
+    model: AI_MODEL,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: JSON.stringify(context) },
+    ],
+    max_tokens: 200,
+  };
+  const data = await chat(payload);
+  const content = data?.choices?.[0]?.message?.content ?? "";
+  return String(content).trim().replace(/^["「』]+|["」』]+$/g, "");
 }

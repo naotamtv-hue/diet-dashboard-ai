@@ -17,8 +17,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl, todayDateString } from "@/lib/labels";
 import { trpc } from "@/lib/trpc";
-import { Camera, Loader2, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { mealMotivation } from "@/lib/motivation";
+import { Camera, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const CARD = {
@@ -38,6 +39,17 @@ type Analysis = {
   fatG: number;
   carbsG: number;
   confidence: "low" | "medium" | "high";
+};
+
+type MealRow = {
+  id: number;
+  mealType: (typeof MEAL_TYPES)[number];
+  description: string | null;
+  imageUrl: string | null;
+  calories: string;
+  proteinG: string;
+  fatG: string;
+  carbsG: string;
 };
 
 /* ── コンビニ商品検索モーダル ── */
@@ -170,13 +182,31 @@ export default function Meals() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [convenienceOpen, setConvenienceOpen] = useState(false);
+  const [nameQuery, setNameQuery] = useState("");
+  const [editing, setEditing] = useState<MealRow | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
   const listQ = trpc.meals.listByDate.useQuery({ date });
   const summaryQ = trpc.meals.summary.useQuery({ date });
+  const frequentQ = trpc.meals.frequentItems.useQuery();
+  const copyM = trpc.meals.copyFromDate.useMutation({
+    onSuccess: (res) => {
+      utils.meals.listByDate.invalidate({ date });
+      utils.meals.summary.invalidate({ date });
+      if (res.count > 0) toast.success(`前日の食事を${res.count}件コピーしました`);
+      else toast.error("前日の記録がありません");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const yesterdayStr = useMemo(() => {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+  }, [date]);
 
   const analyzeM = trpc.meals.analyzePhoto.useMutation();
+  const estimateM = trpc.meals.estimateByName.useMutation();
   const addM = trpc.meals.add.useMutation({
     onSuccess: () => {
       utils.meals.listByDate.invalidate({ date });
@@ -188,6 +218,15 @@ export default function Meals() {
       utils.meals.listByDate.invalidate({ date });
       utils.meals.summary.invalidate({ date });
     },
+  });
+  const updateM = trpc.meals.update.useMutation({
+    onSuccess: () => {
+      utils.meals.listByDate.invalidate({ date });
+      utils.meals.summary.invalidate({ date });
+      setEditing(null);
+      toast.success("更新しました");
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   const onPickPhoto = async (file: File) => {
@@ -209,6 +248,46 @@ export default function Meals() {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const onSearchByName = async () => {
+    const q = nameQuery.trim();
+    if (!q) return;
+    try {
+      const res = await estimateM.mutateAsync({ query: q });
+      const a = res.analysis as Analysis;
+      if (!a.calories) {
+        toast.error(a.description || "推定できませんでした");
+        return;
+      }
+      setDescription(a.description);
+      setCalories(String(a.calories));
+      setProteinG(String(a.proteinG));
+      setFatG(String(a.fatG));
+      setCarbsG(String(a.carbsG));
+      setImageUrl(null);
+      toast.success("AI推定で入力しました（おおよその値です）");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "検索に失敗しました");
+    }
+  };
+
+  const onSelectFrequent = (item: {
+    name: string;
+    mealType: (typeof MEAL_TYPES)[number];
+    calories: number;
+    proteinG: number;
+    fatG: number;
+    carbsG: number;
+  }) => {
+    setDescription(item.name);
+    setMealType(item.mealType);
+    setCalories(String(item.calories));
+    setProteinG(String(item.proteinG));
+    setFatG(String(item.fatG));
+    setCarbsG(String(item.carbsG));
+    setImageUrl(null);
+    toast.success(`「${item.name}」を入力しました`);
   };
 
   const onSelectConvenience = (item: {
@@ -249,7 +328,7 @@ export default function Meals() {
     setFatG("");
     setCarbsG("");
     setImageUrl(null);
-    toast.success("記録しました");
+    toast.success(mealMotivation(), { duration: 4500 });
   };
 
   return (
@@ -283,14 +362,13 @@ export default function Meals() {
           </div>
         </div>
 
-        {/* 入力方法ボタン群 */}
+        {/* 入力方法ボタン群（アイコン上・ラベル下で文字切れを防止） */}
         <div className="grid grid-cols-2 gap-2">
           <div>
             <input
               ref={fileRef}
               type="file"
               accept="image/*"
-              capture="environment"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -301,27 +379,100 @@ export default function Meals() {
             <Button
               type="button"
               variant="outline"
-              className="w-full h-12 gap-2 font-semibold text-sm rounded-xl"
+              className="w-full h-auto py-3 flex flex-col items-center gap-1.5 font-semibold text-sm rounded-xl"
               disabled={analyzing}
               onClick={() => fileRef.current?.click()}
             >
               {analyzing ? (
-                <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Camera className="h-4 w-4 flex-shrink-0" />
+                <Camera className="h-5 w-5" />
               )}
-              <span className="truncate">{analyzing ? "AI解析中..." : "写真AI解析"}</span>
+              <span>{analyzing ? "AI解析中..." : "写真で解析"}</span>
             </Button>
           </div>
           <Button
             type="button"
             variant="outline"
-            className="w-full h-12 gap-2 font-semibold text-sm rounded-xl"
+            className="w-full h-auto py-3 flex flex-col items-center gap-1.5 font-semibold text-sm rounded-xl"
             onClick={() => setConvenienceOpen(true)}
           >
-            <ShoppingBag className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">コンビニから選ぶ</span>
+            <ShoppingBag className="h-5 w-5" />
+            <span>コンビニから選ぶ</span>
           </Button>
+        </div>
+
+        {/* 食べ物・商品名でAI検索 */}
+        <div className="space-y-1.5">
+          <Label className="section-label">名前で検索（AI推定）</Label>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="例：唐揚げ3個 / セブンのおにぎり 鮭"
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onSearchByName();
+                }
+              }}
+              className="h-11 flex-1"
+            />
+            <Button
+              type="button"
+              className="h-11 px-4 gap-1.5 font-semibold rounded-xl flex-shrink-0"
+              style={{ background: "oklch(0.62 0.18 220)" }}
+              disabled={estimateM.isPending || !nameQuery.trim()}
+              onClick={onSearchByName}
+            >
+              {estimateM.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              検索
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            写真がなくても、食べ物やコンビニ商品の名前からおおよそのカロリー・PFCを自動入力します。
+          </p>
+        </div>
+
+        {/* よく食べる物 ／ 昨日と同じ */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="section-label">よく食べる物</Label>
+            <button
+              type="button"
+              className="text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+              style={{ color: "oklch(0.62 0.18 220)" }}
+              disabled={copyM.isPending}
+              onClick={() => copyM.mutate({ fromDate: yesterdayStr, toDate: date })}
+            >
+              <Plus className="h-3.5 w-3.5" /> 昨日と同じ
+            </button>
+          </div>
+          {frequentQ.data && frequentQ.data.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {frequentQ.data.map((item) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => onSelectFrequent(item)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                  style={{ background: "oklch(0.24 0.04 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+                >
+                  <span className="text-white">{item.name}</span>
+                  <span className="text-muted-foreground ml-1.5">{item.calories}kcal</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              記録を重ねると、よく食べる物がここに並んでワンタップ入力できます。
+            </p>
+          )}
         </div>
 
         {imageUrl && (
@@ -416,7 +567,15 @@ export default function Meals() {
                       </div>
                     </div>
                     <button
+                      className="tap-target text-muted-foreground hover:text-white rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                      aria-label="編集"
+                      onClick={() => setEditing(m as MealRow)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
                       className="tap-target text-muted-foreground hover:text-destructive rounded-lg hover:bg-destructive/10 transition-colors flex-shrink-0"
+                      aria-label="削除"
                       onClick={() => removeM.mutate({ id: m.id })}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -435,7 +594,104 @@ export default function Meals() {
         onClose={() => setConvenienceOpen(false)}
         onSelect={onSelectConvenience}
       />
+
+      {/* 食事編集モーダル */}
+      <EditMealModal
+        meal={editing}
+        saving={updateM.isPending}
+        onClose={() => setEditing(null)}
+        onSave={(vals) => updateM.mutate({ id: editing!.id, ...vals })}
+      />
     </div>
+  );
+}
+
+/* ── 食事編集モーダル ── */
+function EditMealModal({
+  meal,
+  saving,
+  onClose,
+  onSave,
+}: {
+  meal: MealRow | null;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (vals: {
+    mealType: (typeof MEAL_TYPES)[number];
+    description: string | null;
+    calories: number;
+    proteinG: number;
+    fatG: number;
+    carbsG: number;
+  }) => void;
+}) {
+  const [mealType, setMealType] = useState<(typeof MEAL_TYPES)[number]>("lunch");
+  const [description, setDescription] = useState("");
+  const [calories, setCalories] = useState("");
+  const [proteinG, setProteinG] = useState("");
+  const [fatG, setFatG] = useState("");
+  const [carbsG, setCarbsG] = useState("");
+
+  useEffect(() => {
+    if (!meal) return;
+    setMealType(meal.mealType);
+    setDescription(meal.description ?? "");
+    setCalories(String(Number(meal.calories)));
+    setProteinG(String(Number(meal.proteinG)));
+    setFatG(String(Number(meal.fatG)));
+    setCarbsG(String(Number(meal.carbsG)));
+  }, [meal]);
+
+  return (
+    <Dialog open={!!meal} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>食事を編集</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="section-label">区分</Label>
+            <Select value={mealType} onValueChange={(v) => setMealType(v as typeof mealType)}>
+              <SelectTrigger className="w-full h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MEAL_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{MEAL_TYPE_LABELS[t]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="section-label">内容</Label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-11" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <NumField label="カロリー (KCAL)" value={calories} onChange={setCalories} />
+            <NumField label="タンパク質 (G)" value={proteinG} onChange={setProteinG} />
+            <NumField label="脂質 (G)" value={fatG} onChange={setFatG} />
+            <NumField label="炭水化物 (G)" value={carbsG} onChange={setCarbsG} />
+          </div>
+          <Button
+            className="w-full h-12 font-bold rounded-xl"
+            style={{ background: "oklch(0.62 0.18 220)" }}
+            disabled={saving}
+            onClick={() =>
+              onSave({
+                mealType,
+                description: description.trim() || null,
+                calories: Number(calories) || 0,
+                proteinG: Number(proteinG) || 0,
+                fatG: Number(fatG) || 0,
+                carbsG: Number(carbsG) || 0,
+              })
+            }
+          >
+            {saving ? "保存中..." : "保存する"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

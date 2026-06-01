@@ -11,8 +11,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { INTENSITY_LABELS, todayDateString } from "@/lib/labels";
 import { trpc } from "@/lib/trpc";
+import { workoutMotivation } from "@/lib/motivation";
 import { Dumbbell, Flame, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const CARD = {
@@ -34,12 +35,46 @@ export default function Workouts() {
   const [reps, setReps] = useState("");
   const [sets, setSets] = useState("");
   const [note, setNote] = useState("");
+  const [estimatedKcal, setEstimatedKcal] = useState<number | null>(null);
+  const [estimateNote, setEstimateNote] = useState("");
 
   const utils = trpc.useUtils();
   const listQ = trpc.workouts.listByDate.useQuery({ date });
+  const estimateM = trpc.workouts.estimateCalories.useMutation();
   const addM = trpc.workouts.add.useMutation({
     onSuccess: () => utils.workouts.listByDate.invalidate({ date }),
   });
+
+  // 入力が変わったら推定値はリセット（古い値を保存しないため）
+  useEffect(() => {
+    setEstimatedKcal(null);
+    setEstimateNote("");
+  }, [activity, durationMin, weightKg, reps, sets, intensity]);
+
+  const onEstimate = async () => {
+    if (!activity.trim()) {
+      toast.error("先に種目名を入力してください");
+      return;
+    }
+    if (!durationMin && !(sets && reps)) {
+      toast.error("有酸素は「時間（分）」、筋トレは「回数・セット」を入れてください");
+      return;
+    }
+    try {
+      const res = await estimateM.mutateAsync({
+        activity: activity.trim(),
+        durationMin: Number(durationMin) || 0,
+        intensity,
+        weightKg: weightKg ? Number(weightKg) : null,
+        reps: reps ? Number(reps) : null,
+        sets: sets ? Number(sets) : null,
+      });
+      setEstimatedKcal(res.caloriesBurned);
+      setEstimateNote(res.reasoning);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "計算に失敗しました");
+    }
+  };
   const removeM = trpc.workouts.remove.useMutation({
     onSuccess: () => utils.workouts.listByDate.invalidate({ date }),
   });
@@ -49,7 +84,7 @@ export default function Workouts() {
       toast.error("種目名を入力してください");
       return;
     }
-    await addM.mutateAsync({
+    const res = await addM.mutateAsync({
       date,
       activity: activity.trim(),
       durationMin: Number(durationMin) || 0,
@@ -57,16 +92,19 @@ export default function Workouts() {
       weightKg: weightKg ? Number(weightKg) : null,
       reps: reps ? Number(reps) : null,
       sets: sets ? Number(sets) : null,
-      caloriesBurned: null,
+      caloriesBurned: estimatedKcal,
       note: note || null,
     });
+    const kcal = estimatedKcal ?? res.estimatedCalories ?? 0;
     setActivity("");
     setDurationMin("");
     setWeightKg("");
     setReps("");
     setSets("");
     setNote("");
-    toast.success("AIで消費kcalを概算し記録しました");
+    setEstimatedKcal(null);
+    setEstimateNote("");
+    toast.success(`${workoutMotivation()}（消費 約${Math.round(kcal)}kcal）`, { duration: 4500 });
   };
 
   const totalKcal = (listQ.data ?? []).reduce((a, w) => a + Number(w.caloriesBurned ?? 0), 0);
@@ -130,6 +168,34 @@ export default function Workouts() {
         <div className="space-y-2">
           <Label className="section-label">時間（分・有酸素の場合）</Label>
           <Input type="number" inputMode="numeric" value={durationMin} onChange={(e) => setDurationMin(e.target.value)} placeholder="30" className="h-11" />
+        </div>
+
+        {/* 消費カロリーの計算・表示 */}
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11 gap-2 font-semibold rounded-xl"
+            disabled={estimateM.isPending}
+            onClick={onEstimate}
+          >
+            {estimateM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flame className="h-4 w-4" />}
+            消費カロリーを計算
+          </Button>
+          {estimatedKcal !== null && (
+            <div
+              className="rounded-xl px-4 py-3"
+              style={{ background: "oklch(0.72 0.18 155 / 0.15)", border: "1px solid oklch(0.72 0.18 155 / 0.3)" }}
+            >
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold" style={{ color: "oklch(0.72 0.18 155)" }}>
+                  {Math.round(estimatedKcal)}
+                </span>
+                <span className="text-sm text-muted-foreground">kcal 消費（推定）</span>
+              </div>
+              {estimateNote && <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{estimateNote}</div>}
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

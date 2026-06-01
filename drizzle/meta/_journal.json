@@ -1,19 +1,19 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1779941447748,
-      "tag": "0000_opposite_ma_gnuci",
+      "version": "6",
+      "when": 1780306314498,
+      "tag": "0000_amused_sugar_man",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "5",
-      "when": 1779941667937,
-      "tag": "0001_stale_peter_parker",
+      "version": "6",
+      "when": 1780317679784,
+      "tag": "0001_light_exiles",
       "breakpoints": true
     }
   ]
