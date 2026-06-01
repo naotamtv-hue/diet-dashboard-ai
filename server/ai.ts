@@ -56,8 +56,8 @@ export type MealAnalysisResult = {
  * @param imageUrlOrDataUrl 公開URL もしくは data:image/...;base64,... 形式
  */
 export async function analyzeMealImage(imageUrlOrDataUrl: string): Promise<MealAnalysisResult> {
-  const system = `あなたは日本の食事解析の専門家です。送られた食事写真を見て、写っている料理を日本語で簡潔に説明し、1食分の総量を推定して以下を返してください。
-- description: 写っている料理を日本語で1〜2文（例：「鶏むね肉のサラダと白米、味噌汁」）
+  const system = `あなたは日本の食事解析の専門家です。送られた食事写真を見て、写っている料理を判定し、1食分の総量を推定して以下を返してください。
+- description: 写っている料理名・食材名だけを簡潔に（例：「鶏むね肉のサラダと白米、味噌汁」「サーモン丼と生卵」）。コンビニ等の正式名称はそのまま。「です」「〜と思われます」「推定しました」などの語尾・説明・補足は付けない。20文字程度まで。
 - calories: 総摂取カロリー (kcal, 整数)
 - proteinG: タンパク質 (g, 小数1桁まで)
 - fatG: 脂質 (g, 小数1桁まで)
@@ -144,7 +144,7 @@ function parseJsonLoose<T = any>(content: unknown): T {
  */
 export async function estimateMealByName(query: string): Promise<MealAnalysisResult> {
   const system = `あなたは日本の食品栄養の専門家です。ユーザーが入力した食べ物・商品名（コンビニ商品・外食・自炊メニュー等を含む）について、日本で一般的な1人前/1個あたりのおおよその栄養価を推定してください。
-- description: 対象の料理・商品名を日本語で簡潔に（例:「セブンイレブン からあげ棒 1本」）。分量が不明なら一般的な1人前を仮定し、その旨を含める。
+- description: 料理名・商品名だけを簡潔に書く（例:「親子丼」「サーモン丼と生卵」「ザバスミルクプロテイン ミルク風味」）。コンビニ等の正式名称はそのまま使う。「です」「〜と思われます」「推定しました」「不明です」などの語尾・説明・補足・前置きは一切付けない。15〜20文字程度まで。
 - calories: カロリー (kcal, 整数)
 - proteinG: タンパク質 (g, 小数1桁)
 - fatG: 脂質 (g, 小数1桁)
@@ -324,10 +324,12 @@ export async function estimateWorkoutCalories(params: {
   reps?: number | null;
   sets?: number | null;
   bodyWeightKg?: number | null;
+  incline?: boolean | null;
 }): Promise<WorkoutCaloriesEstimate> {
   const system = `あなたはスポーツ栄養と運動生理学の専門家です。
 種目・重量(kg)・回数・セット数・時間・強度・体重から、その運動のおおよその消費カロリー(kcal)を整数で概算してください。
 無酸素運動の場合はセット間の休憩を含め、運動時間からMET法を組み合わせて推定してください。
+有酸素運動で incline=true（傾斜あり：トレッドミルの坂・上り坂・階段など）の場合は、平地より15〜40%多く消費する前提で見積もり、reasoningにも傾斜を考慮した旨を入れてください。
 出力は JSON のみで {"caloriesBurned": number, "reasoning": "日本語の根拠1文"} を返してください。`;
 
   const payload = {
@@ -473,6 +475,125 @@ export async function buildTrainerPlan(params: {
   } catch {
     throw new Error("AI応答の解析に失敗しました");
   }
+}
+
+export type MealPlanResult = {
+  goalAssessment: string;
+  isAggressive: boolean;
+  dailyTarget: { calories: number; proteinG: number; fatG: number; carbsG: number };
+  homeCookingPlan: { mealType: string; items: { name: string; grams: number; kcal: number }[]; totalKcal: number }[];
+  conveniencePlan: { mealType: string; items: { name: string; kcal: number }[]; totalKcal: number }[];
+  tips: string[];
+};
+
+/**
+ * 目標(体重/期間/TDEE/目標kcal)から、1日の食事量・献立・グラム数をAIが提案する。
+ * 自炊メニュー(レシピ・グラム)とコンビニメニューの両方を返し、無理な目標には警告する。
+ */
+export async function buildMealPlan(context: {
+  gender: "male" | "female";
+  age: number;
+  heightCm: number;
+  currentWeightKg: number;
+  targetWeightKg: number;
+  targetWeeks: number;
+  weeklyLossKg: number;
+  tdee: number;
+  targetCalories: number;
+  activityLevel: string;
+  preference?: string;
+}): Promise<MealPlanResult> {
+  const system = `あなたは日本人向けのAI食事管理トレーナーです。ユーザーの目標と体組成に合わせ、1日の食事プランを提案してください。
+- goalAssessment: 目標の現実性を評価。健康的な減量は週あたり体重の0.5〜1%(おおむね-0.5〜-1.0kg/週)まで。これを大きく超える無理な目標(例:1ヶ月-10kg)はリバウンド・筋肉減少・体調不良のリスクがあると明確に警告し、現実的な期間/ペースを提案する。問題なければ前向きに励ます。日本語2〜3文。
+- isAggressive: 週減量ペースが過激(健康的範囲を超える)なら true。
+- dailyTarget: 1日の目標 calories(kcal,整数)/proteinG/fatG/carbsG(g,整数)。タンパク質は減量中なので体重×1.6〜2.2g目安。
+- homeCookingPlan: 自炊中心の献立。朝食/昼食/夕食(必要なら間食)。各mealに items[{name(料理・食材名), grams(g,整数), kcal(整数)}] と totalKcal。一般的で作りやすい和洋メニュー、グラム数を必ず明記。
+- conveniencePlan: コンビニ(セブン/ファミマ/ローソン)で同じ目標kcalを満たす献立。各mealに items[{name(実在しそうな商品名), kcal}] と totalKcal。低脂質・高タンパクを優先。
+- tips: 続けるコツを2〜3個(短文)。
+出力はJSONのみ。`;
+
+  const payload = {
+    model: AI_MODEL,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: JSON.stringify(context) },
+    ],
+    max_tokens: 4000,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "meal_plan",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            goalAssessment: { type: "string" },
+            isAggressive: { type: "boolean" },
+            dailyTarget: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                calories: { type: "number" },
+                proteinG: { type: "number" },
+                fatG: { type: "number" },
+                carbsG: { type: "number" },
+              },
+              required: ["calories", "proteinG", "fatG", "carbsG"],
+            },
+            homeCookingPlan: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  mealType: { type: "string" },
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      additionalProperties: false,
+                      properties: { name: { type: "string" }, grams: { type: "number" }, kcal: { type: "number" } },
+                      required: ["name", "grams", "kcal"],
+                    },
+                  },
+                  totalKcal: { type: "number" },
+                },
+                required: ["mealType", "items", "totalKcal"],
+              },
+            },
+            conveniencePlan: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  mealType: { type: "string" },
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      additionalProperties: false,
+                      properties: { name: { type: "string" }, kcal: { type: "number" } },
+                      required: ["name", "kcal"],
+                    },
+                  },
+                  totalKcal: { type: "number" },
+                },
+                required: ["mealType", "items", "totalKcal"],
+              },
+            },
+            tips: { type: "array", items: { type: "string" } },
+          },
+          required: ["goalAssessment", "isAggressive", "dailyTarget", "homeCookingPlan", "conveniencePlan", "tips"],
+        },
+      },
+    },
+  };
+
+  const data = await chat(payload);
+  const content = data?.choices?.[0]?.message?.content ?? "";
+  return parseJsonLoose<MealPlanResult>(content);
 }
 
 /**

@@ -20,12 +20,14 @@ import {
   Target,
   Bell,
   ChevronRight,
+  UtensilsCrossed,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { trpc } from "@/lib/trpc";
+import { todayDateString } from "@/lib/labels";
 import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 
 /* ─────────────────────────────────────────────
@@ -40,8 +42,9 @@ const BOTTOM_NAV = [
 ];
 
 const MORE_NAV = [
+  { path: "/trainer",     label: "AI食事トレーナー", icon: UtensilsCrossed },
   { path: "/strength",    label: "筋トレ",    icon: Dumbbell },
-  { path: "/coach",       label: "AIコーチ",  icon: Sparkles },
+  { path: "/coach",       label: "AIパーソナルトレーナー", icon: Sparkles },
   { path: "/convenience", label: "コンビニ",  icon: ShoppingBag },
   { path: "/photos",      label: "体型写真",  icon: Camera },
   { path: "/goal",        label: "目標設定",  icon: Target },
@@ -65,6 +68,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
 
   useReminderScheduler(Boolean(user));
+  const streakQ = trpc.stats.streak.useQuery(
+    { today: todayDateString() },
+    { enabled: Boolean(user), staleTime: 60_000 }
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -95,25 +102,25 @@ export default function AppShell({ children }: { children: ReactNode }) {
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4"
         style={{
           height: `${HEADER_H}px`,
-          background: "oklch(0.17 0.05 240)",
-          borderBottom: "1px solid oklch(0.28 0.04 240)",
-          boxShadow: "0 2px 12px oklch(0 0 0 / 0.4)",
+          background: "oklch(1 0 0)",
+          borderBottom: "1px solid oklch(0.92 0.006 250)",
+          boxShadow: "0 2px 12px oklch(0 0 0 / 0.08)",
         }}
       >
         {/* Brand */}
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer select-none">
             <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: "oklch(0.62 0.18 220)" }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-900 font-bold text-sm"
+              style={{ background: "oklch(0.58 0.19 254)" }}
             >
               D
             </div>
-            <span className="font-bold text-base text-white tracking-tight hidden sm:block">
+            <span className="font-bold text-base text-slate-900 tracking-tight hidden sm:block">
               Diet Atelier
             </span>
             {currentLabel && (
-              <span className="font-semibold text-base text-white sm:hidden">
+              <span className="font-semibold text-base text-slate-900 sm:hidden">
                 {currentLabel}
               </span>
             )}
@@ -127,8 +134,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <button
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
                   location === item.path
-                    ? "bg-primary text-white"
-                    : "text-slate-300 hover:text-white hover:bg-white/10"
+                    ? "bg-primary text-slate-900"
+                    : "text-slate-300 hover:text-slate-900 hover:bg-white/10"
                 }`}
               >
                 {item.label}
@@ -137,14 +144,25 @@ export default function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* User Menu */}
+        {/* 右上：連続記録日数 ＋ User Menu */}
+        <div className="flex items-center gap-2">
+          {streakQ.data && streakQ.data.streak > 0 && (
+            <div
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full"
+              style={{ background: "oklch(0.96 0.03 55)", border: "1px solid oklch(0.88 0.06 55)" }}
+              title={`${streakQ.data.streak}日連続で記録中`}
+            >
+              <span className="text-sm leading-none">🔥</span>
+              <span className="text-xs font-bold" style={{ color: "oklch(0.58 0.16 45)" }}>{streakQ.data.streak}</span>
+            </div>
+          )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="tap-target rounded-full hover:bg-white/10 transition-colors">
               <Avatar className="h-8 w-8 border-2 border-white/20">
                 <AvatarFallback
                   className="text-xs font-bold text-white"
-                  style={{ background: "oklch(0.62 0.18 220)" }}
+                  style={{ background: "oklch(0.58 0.19 254)" }}
                 >
                   {user.name?.charAt(0).toUpperCase() ?? "U"}
                 </AvatarFallback>
@@ -155,8 +173,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
             align="end"
             className="w-56"
             style={{
-              background: "oklch(0.22 0.05 240)",
-              border: "1px solid oklch(0.30 0.04 240)",
+              background: "oklch(1 0 0)",
+              border: "1px solid oklch(0.92 0.006 250)",
             }}
           >
             <div className="px-3 py-3 border-b border-border">
@@ -176,6 +194,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </header>
 
       {/* ── Main Content ──
@@ -198,9 +217,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
         className="md:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
           height: `${BOTTOM_NAV_H}px`,
-          background: "oklch(0.17 0.05 240)",
-          borderTop: "1px solid oklch(0.28 0.04 240)",
-          boxShadow: "0 -2px 12px oklch(0 0 0 / 0.4)",
+          background: "oklch(1 0 0)",
+          borderTop: "1px solid oklch(0.92 0.006 250)",
+          boxShadow: "0 -2px 12px oklch(0 0 0 / 0.08)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
@@ -224,7 +243,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                       style={{
                         width: "1.25rem",
                         height: "1.25rem",
-                        color: active ? "oklch(0.62 0.18 220)" : "oklch(0.55 0.03 220)",
+                        color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
                         strokeWidth: active ? 2.5 : 1.8,
                       }}
                     />
@@ -232,7 +251,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   <span
                     className="text-[10px] font-medium"
                     style={{
-                      color: active ? "oklch(0.62 0.18 220)" : "oklch(0.55 0.03 220)",
+                      color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
                     }}
                   >
                     {item.label}
@@ -258,18 +277,18 @@ function LandingPage() {
         className="fixed top-0 left-0 right-0 z-50 flex items-center px-5"
         style={{
           height: `${HEADER_H}px`,
-          background: "oklch(0.17 0.05 240)",
-          borderBottom: "1px solid oklch(0.28 0.04 240)",
+          background: "oklch(1 0 0)",
+          borderBottom: "1px solid oklch(0.92 0.006 250)",
         }}
       >
         <div className="flex items-center gap-2">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ background: "oklch(0.62 0.18 220)" }}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-900 font-bold text-sm"
+            style={{ background: "oklch(0.58 0.19 254)" }}
           >
             D
           </div>
-          <span className="font-bold text-base text-white">Diet Atelier</span>
+          <span className="font-bold text-base text-slate-900">Diet Atelier</span>
         </div>
       </header>
 
@@ -280,7 +299,7 @@ function LandingPage() {
         {/* Hero */}
         <div className="mb-12">
           <div className="section-label mb-3">AI-POWERED DIET MANAGEMENT</div>
-          <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
+          <h1 className="text-3xl font-bold text-slate-900 mb-4 leading-tight">
             毎日の食事を記録して、<br />
             理想の体型へ。
           </h1>
@@ -293,24 +312,24 @@ function LandingPage() {
         {/* Feature List */}
         <div className="space-y-3 mb-12">
           {[
-            { title: "AI食事解析", sub: "写真からカロリー・PFCを自動推定", color: "oklch(0.62 0.18 220)" },
-            { title: "減量計画の自動算出", sub: "BMR・TDEEから1日の目安kcalを提示", color: "oklch(0.72 0.18 155)" },
+            { title: "AI食事解析", sub: "写真からカロリー・PFCを自動推定", color: "oklch(0.58 0.19 254)" },
+            { title: "減量計画の自動算出", sub: "基礎代謝から1日の目安カロリーを自動計算", color: "oklch(0.72 0.18 155)" },
             { title: "コンビニAI提案", sub: "残カロリーに合う商品を提案", color: "oklch(0.75 0.18 55)" },
             { title: "ビフォーアフター", sub: "体型写真で変化を実感", color: "oklch(0.68 0.14 290)" },
-            { title: "AIパーソナルトレーナー", sub: "目標から週次トレーニングを提案", color: "oklch(0.62 0.18 220)" },
+            { title: "AIパーソナルトレーナー", sub: "目標から週次トレーニングを提案", color: "oklch(0.58 0.19 254)" },
             { title: "記録リマインド", sub: "未記録の日だけそっと通知", color: "oklch(0.72 0.18 155)" },
           ].map(({ title, sub, color }) => (
             <div
               key={title}
               className="flex items-center gap-4 px-4 py-3.5 rounded-xl"
-              style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.28 0.04 240)" }}
+              style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
             >
               <div
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ background: color }}
               />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-white">{title}</div>
+                <div className="text-sm font-semibold text-slate-900">{title}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -369,10 +388,10 @@ function AuthCard() {
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.28 0.04 240)" }}
+      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
     >
       {/* Tabs */}
-      <div className="grid grid-cols-2 gap-1 p-1 mb-5 rounded-xl" style={{ background: "oklch(0.16 0.04 240)" }}>
+      <div className="grid grid-cols-2 gap-1 p-1 mb-5 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
         {(["login", "register"] as const).map((m) => (
           <button
             key={m}
@@ -381,8 +400,8 @@ function AuthCard() {
             className="py-2 rounded-lg text-sm font-semibold transition-colors"
             style={
               mode === m
-                ? { background: "oklch(0.62 0.18 220)", color: "white" }
-                : { color: "oklch(0.65 0.03 220)" }
+                ? { background: "oklch(0.58 0.19 254)", color: "white" }
+                : { color: "oklch(0.55 0.02 252)" }
             }
           >
             {m === "login" ? "ログイン" : "新規登録"}
@@ -428,7 +447,7 @@ function AuthCard() {
           size="lg"
           disabled={pending}
           className="w-full h-13 text-base font-bold rounded-xl shadow-lg"
-          style={{ background: "oklch(0.62 0.18 220)" }}
+          style={{ background: "oklch(0.58 0.19 254)" }}
         >
           {pending ? "処理中..." : mode === "login" ? "ログイン" : "無料で始める"}
         </Button>

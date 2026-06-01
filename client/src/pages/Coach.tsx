@@ -30,13 +30,13 @@ const ENV_LABELS: Record<Environment, string> = {
 };
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 export default function Coach() {
@@ -75,7 +75,7 @@ export default function Coach() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">AI PERSONAL TRAINER</div>
-        <h1 className="text-2xl font-bold text-white">AIトレーナー</h1>
+        <h1 className="text-2xl font-bold text-slate-900">AIパーソナルトレーナー</h1>
         <p className="text-xs text-muted-foreground mt-1">
           目標と体組成、経験レベルから1週間分のメニューを提案します
         </p>
@@ -185,10 +185,10 @@ export default function Coach() {
             {plan.weeklyPlan.map((day, di) => (
               <div key={di} className="rounded-xl px-4 py-4 space-y-3" style={CARD}>
                 <div className="flex items-center justify-between">
-                  <div className="text-base font-bold text-white">{day.day}</div>
+                  <div className="text-base font-bold text-slate-900">{day.day}</div>
                   <div
                     className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{ background: "oklch(0.62 0.18 220 / 0.2)", color: "oklch(0.62 0.18 220)" }}
+                    style={{ background: "oklch(0.58 0.19 254 / 0.12)", color: "oklch(0.58 0.19 254)" }}
                   >
                     {day.focus}
                   </div>
@@ -197,9 +197,9 @@ export default function Coach() {
                   {day.exercises.map((ex, i) => (
                     <div key={i} className="rounded-xl px-3 py-3" style={INNER}>
                       <div className="flex items-start gap-2">
-                        <Dumbbell className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
+                        <Dumbbell className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-white">
+                          <div className="text-sm font-semibold text-slate-900">
                             {ex.name}
                             <span className="text-[10px] text-muted-foreground ml-2 font-normal">
                               ({ex.targetMuscle})

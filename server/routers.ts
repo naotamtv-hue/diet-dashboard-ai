@@ -12,7 +12,7 @@ import type { User } from "../drizzle/schema";
 import { BODY_PARTS } from "../drizzle/schema";
 import * as db from "./db";
 import { storagePut } from "./storage";
-import { analyzeMealImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
+import { analyzeMealImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
 import { buildPlan, suggestPfcTargets } from "./nutrition";
 
 const dateStringSchema = z
@@ -101,7 +101,8 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const email = input.email.trim().toLowerCase();
         const openId = `local:${email}`;
-        const existing = await db.getUserByOpenId(openId);
+        // メールで検索（移行ユーザーはopenIdがManus形式のため、emailで突き合わせる）
+        const existing = await db.getUserByEmail(email);
         if (existing) {
           // Manus移行ユーザー(passwordHash未設定)は、同じメールでの登録を「claim」として扱い
           // パスワードを後付けして既存データへログインさせる。
@@ -140,8 +141,7 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const email = input.email.trim().toLowerCase();
-        const openId = `local:${email}`;
-        const user = await db.getUserByOpenId(openId);
+        const user = await db.getUserByEmail(email);
         if (!user || !user.passwordHash || !(await verifyPassword(input.password, user.passwordHash))) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -254,6 +254,8 @@ export const appRouter = router({
 
     frequentItems: protectedProcedure.query(({ ctx }) => db.frequentMeals(ctx.user.id, 8)),
 
+    history: protectedProcedure.query(({ ctx }) => db.foodHistory(ctx.user.id, 100)),
+
     copyFromDate: protectedProcedure
       .input(z.object({ fromDate: dateStringSchema, toDate: dateStringSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -360,6 +362,7 @@ export const appRouter = router({
           reps: z.number().int().min(0).max(200).optional().nullable(),
           sets: z.number().int().min(0).max(50).optional().nullable(),
           caloriesBurned: z.number().min(0).max(5000).optional().nullable(),
+          incline: z.boolean().optional().nullable(),
           note: z.string().max(500).optional().nullable(),
         })
       )
@@ -384,6 +387,7 @@ export const appRouter = router({
               reps: input.reps ?? null,
               sets: input.sets ?? null,
               bodyWeightKg: bodyWeight,
+              incline: input.incline ?? null,
             });
             calories = est.caloriesBurned;
           } catch (e) {
@@ -415,6 +419,7 @@ export const appRouter = router({
           weightKg: z.number().min(0).max(500).optional().nullable(),
           reps: z.number().int().min(0).max(200).optional().nullable(),
           sets: z.number().int().min(0).max(50).optional().nullable(),
+          incline: z.boolean().optional().nullable(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -547,6 +552,7 @@ export const appRouter = router({
           category: categorySchema.optional(),
           keyword: z.string().max(60).optional(),
           maxKcal: z.number().int().min(0).max(2000).optional(),
+          limit: z.number().int().min(1).max(100).optional(),
         })
       )
       .query(({ input }) => db.searchConvenienceItems(input)),
@@ -585,6 +591,31 @@ export const appRouter = router({
           candidates,
         });
         return result;
+      }),
+  }),
+
+  /* ============================== AI食事トレーナー ============================== */
+  trainer: router({
+    mealPlan: protectedProcedure
+      .input(z.object({ preference: z.string().max(300).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const goal = await db.getGoal(ctx.user.id);
+        if (!goal) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "先に目標を設定してください" });
+        }
+        return buildMealPlan({
+          gender: goal.gender,
+          age: goal.age,
+          heightCm: Number(goal.heightCm),
+          currentWeightKg: Number(goal.currentWeightKg),
+          targetWeightKg: Number(goal.targetWeightKg),
+          targetWeeks: goal.targetWeeks,
+          weeklyLossKg: Number(goal.weeklyLossKg),
+          tdee: Number(goal.tdee),
+          targetCalories: Number(goal.targetCalories),
+          activityLevel: goal.activityLevel,
+          preference: input.preference,
+        });
       }),
   }),
 

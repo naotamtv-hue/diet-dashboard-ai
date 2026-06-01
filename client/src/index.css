@@ -47,40 +47,40 @@
    Dark Navy / Steel Blue / Cyan-Green accent
 ───────────────────────────────────────────── */
 :root {
-  /* Primary: Bright cyan-blue (MFP action color) */
-  --primary: oklch(0.62 0.18 220);
-  --primary-foreground: oklch(0.99 0 0);
+  /* Primary: MFP blue */
+  --primary: oklch(0.58 0.19 254);
+  --primary-foreground: oklch(1 0 0);
 
-  /* Secondary: Muted navy */
-  --secondary: oklch(0.28 0.06 240);
-  --secondary-foreground: oklch(0.85 0.02 220);
+  /* Secondary: light grey */
+  --secondary: oklch(0.96 0.005 250);
+  --secondary-foreground: oklch(0.32 0.03 252);
 
-  /* Background: Deep navy */
-  --background: oklch(0.14 0.04 240);
-  --foreground: oklch(0.95 0.01 220);
+  /* Background: white / very light grey */
+  --background: oklch(0.985 0.002 250);
+  --foreground: oklch(0.24 0.03 252);
 
-  /* Cards: Slightly lighter navy */
-  --card: oklch(0.20 0.05 240);
-  --card-foreground: oklch(0.95 0.01 220);
+  /* Cards: white */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.03 252);
 
-  --popover: oklch(0.22 0.05 240);
-  --popover-foreground: oklch(0.95 0.01 220);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.03 252);
 
-  /* Muted: Mid-navy for subtle elements */
-  --muted: oklch(0.24 0.04 240);
-  --muted-foreground: oklch(0.62 0.03 220);
+  /* Muted: light grey bg / grey text */
+  --muted: oklch(0.96 0.004 250);
+  --muted-foreground: oklch(0.55 0.02 252);
 
-  /* Accent: Green (calories remaining / success) */
-  --accent: oklch(0.72 0.18 155);
-  --accent-foreground: oklch(0.10 0.02 155);
+  /* Accent: green (success / calories remaining) */
+  --accent: oklch(0.62 0.16 155);
+  --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.65 0.22 25);
-  --destructive-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.6 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
 
-  /* Borders: Subtle navy lines */
-  --border: oklch(0.30 0.04 240);
-  --input: oklch(0.22 0.05 240);
-  --ring: oklch(0.62 0.18 220);
+  /* Borders: light grey lines */
+  --border: oklch(0.92 0.005 250);
+  --input: oklch(0.94 0.004 250);
+  --ring: oklch(0.58 0.19 254);
 
   /* Chart palette: MFP-style */
   --chart-1: oklch(0.62 0.18 220);   /* blue — protein */
@@ -204,10 +204,10 @@
 
   /* ── MFP-style Card ── */
   .mfp-card {
-    background: oklch(0.20 0.05 240);
-    border: 1px solid oklch(0.30 0.04 240);
+    background: oklch(1 0 0);
+    border: 1px solid oklch(0.92 0.006 250);
     border-radius: var(--radius-lg);
-    box-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06);
   }
 
   /* ── Section Header Label ── */
@@ -215,8 +215,8 @@
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: oklch(0.62 0.03 220);
+    text-transform: none;
+    color: oklch(0.55 0.02 252);
     font-family: 'Inter', system-ui, sans-serif;
     line-height: 1.4;
     display: block;
@@ -235,7 +235,7 @@
 
   /* ── Progress bar ── */
   .progress-track {
-    background: oklch(0.28 0.04 240);
+    background: oklch(0.9 0.006 250);
     border-radius: 9999px;
     overflow: hidden;
     height: 6px;
@@ -255,23 +255,23 @@
     justify-content: center;
   }
 
-  /* ── Input override for dark theme ── */
+  /* ── Input color scheme (light) ── */
   input, textarea, select {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   /* Backward compat aliases */
   .glass-card {
-    background: oklch(0.20 0.05 240);
-    border: 1px solid oklch(0.30 0.04 240);
+    background: oklch(1 0 0);
+    border: 1px solid oklch(0.92 0.006 250);
     border-radius: var(--radius-lg);
-    box-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06);
   }
   .glass-card-elevated {
-    background: oklch(0.20 0.05 240);
-    border: 1px solid oklch(0.30 0.04 240);
+    background: oklch(1 0 0);
+    border: 1px solid oklch(0.92 0.006 250);
     border-radius: var(--radius-lg);
-    box-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.06);
   }
   .page-label {
     font-size: 0.6875rem;

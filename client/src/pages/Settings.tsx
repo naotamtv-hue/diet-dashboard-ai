@@ -9,13 +9,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 export default function Settings() {
@@ -75,7 +75,7 @@ export default function Settings() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">SETTINGS</div>
-        <h1 className="text-2xl font-bold text-white">設定</h1>
+        <h1 className="text-2xl font-bold text-slate-900">設定</h1>
       </div>
 
       {/* アカウント */}
@@ -85,14 +85,14 @@ export default function Settings() {
           アカウント
         </div>
         <div className="rounded-xl px-4 py-3" style={INNER}>
-          <div className="text-sm font-semibold text-white">{user?.name ?? user?.email ?? "ゲスト"}</div>
+          <div className="text-sm font-semibold text-slate-900">{user?.name ?? user?.email ?? "ゲスト"}</div>
           {user?.email && <div className="text-xs text-muted-foreground mt-0.5">{user.email}</div>}
         </div>
         <Button
           variant="outline"
           className="h-11 font-medium rounded-xl"
           onClick={() => logout()}
-          style={{ background: "oklch(0.24 0.04 240)", border: "1px solid oklch(0.30 0.04 240)", color: "oklch(0.75 0.02 220)" }}
+          style={{ background: "oklch(0.965 0.004 250)", border: "1px solid oklch(0.92 0.006 250)", color: "oklch(0.50 0.02 252)" }}
         >
           <LogOut className="h-4 w-4 mr-2" />
           ログアウト
@@ -108,7 +108,7 @@ export default function Settings() {
 
         <div
           className="rounded-xl px-4 py-3 text-xs text-muted-foreground leading-relaxed"
-          style={{ background: "oklch(0.62 0.18 220 / 0.08)", border: "1px solid oklch(0.62 0.18 220 / 0.2)" }}
+          style={{ background: "oklch(0.62 0.18 220 / 0.08)", border: "1px solid oklch(0.58 0.19 254 / 0.12)" }}
         >
           ブラウザを開いている時間に、設定時刻でまだ記録がなければやさしくお知らせします。まずは通知の許可をお願いします。
         </div>
@@ -117,7 +117,7 @@ export default function Settings() {
           variant="outline"
           className="w-full h-11 font-medium rounded-xl"
           onClick={requestPerm}
-          style={{ background: "oklch(0.24 0.04 240)", border: "1px solid oklch(0.30 0.04 240)", color: "oklch(0.75 0.02 220)" }}
+          style={{ background: "oklch(0.965 0.004 250)", border: "1px solid oklch(0.92 0.006 250)", color: "oklch(0.50 0.02 252)" }}
         >
           <Bell className="h-4 w-4 mr-2" />
           通知を許可する
@@ -168,12 +168,12 @@ function ReminderRow({
     <div
       className="rounded-xl px-4 py-3 space-y-3"
       style={{
-        background: "oklch(0.24 0.04 240)",
-        border: "1px solid oklch(0.30 0.04 240)",
+        background: "oklch(0.965 0.004 250)",
+        border: "1px solid oklch(0.92 0.006 250)",
       }}
     >
       <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold text-white">{label}</div>
+        <div className="text-sm font-semibold text-slate-900">{label}</div>
         <Switch checked={enabled} onCheckedChange={onToggle} />
       </div>
       <div className="space-y-1.5">

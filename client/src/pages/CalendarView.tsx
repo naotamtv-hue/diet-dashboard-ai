@@ -6,13 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { MEAL_TYPE_LABELS } from "@/lib/labels";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -34,9 +34,9 @@ function formatDate(year: number, month: number, day: number) {
 }
 
 function calorieColor(kcal: number, target: number | null) {
-  if (!target) return "oklch(0.62 0.18 220)";
+  if (!target) return "oklch(0.58 0.19 254)";
   const ratio = kcal / target;
-  if (ratio < 0.7) return "oklch(0.62 0.18 220)";
+  if (ratio < 0.7) return "oklch(0.58 0.19 254)";
   if (ratio <= 1.1) return "oklch(0.72 0.18 155)";
   if (ratio <= 1.3) return "oklch(0.75 0.18 55)";
   return "oklch(0.65 0.22 25)";
@@ -99,7 +99,7 @@ export default function CalendarView() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">MEAL CALENDAR</div>
-        <h1 className="text-2xl font-bold text-white">食事カレンダー</h1>
+        <h1 className="text-2xl font-bold text-slate-900">食事カレンダー</h1>
       </div>
 
       {/* Month Summary Stats */}
@@ -107,20 +107,20 @@ export default function CalendarView() {
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
             <div className="section-label mb-1">記録日数</div>
-            <div className="text-xl font-bold text-white">
+            <div className="text-xl font-bold text-slate-900">
               {recordedDays}<span className="text-xs font-normal text-muted-foreground ml-0.5">日</span>
             </div>
           </div>
           <div>
             <div className="section-label mb-1">平均摂取</div>
-            <div className="text-xl font-bold" style={{ color: "oklch(0.62 0.18 220)" }}>
+            <div className="text-xl font-bold" style={{ color: "oklch(0.58 0.19 254)" }}>
               {avgCalories > 0 ? avgCalories.toLocaleString() : "—"}
               <span className="text-xs font-normal text-muted-foreground ml-0.5">kcal</span>
             </div>
           </div>
           <div>
             <div className="section-label mb-1">月合計</div>
-            <div className="text-xl font-bold text-white">
+            <div className="text-xl font-bold text-slate-900">
               {totalCalories > 0 ? Math.round(totalCalories / 1000) : "—"}
               <span className="text-xs font-normal text-muted-foreground ml-0.5">k</span>
             </div>
@@ -137,11 +137,11 @@ export default function CalendarView() {
             size="icon"
             onClick={prevMonth}
             className="h-9 w-9 rounded-full"
-            style={{ color: "oklch(0.75 0.02 220)" }}
+            style={{ color: "oklch(0.50 0.02 252)" }}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div className="text-lg font-bold text-white">
+          <div className="text-lg font-bold text-slate-900">
             {year}年 {month}月
           </div>
           <Button
@@ -149,7 +149,7 @@ export default function CalendarView() {
             size="icon"
             onClick={nextMonth}
             className="h-9 w-9 rounded-full"
-            style={{ color: "oklch(0.75 0.02 220)" }}
+            style={{ color: "oklch(0.50 0.02 252)" }}
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
@@ -162,7 +162,7 @@ export default function CalendarView() {
               key={d}
               className="text-center text-[11px] font-semibold py-1"
               style={{
-                color: i === 0 ? "oklch(0.65 0.22 25)" : i === 6 ? "oklch(0.62 0.18 220)" : "oklch(0.55 0.03 220)",
+                color: i === 0 ? "oklch(0.65 0.22 25)" : i === 6 ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
               }}
             >
               {d}
@@ -190,16 +190,16 @@ export default function CalendarView() {
                 className="aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-150 active:scale-95"
                 style={{
                   background: isSelected
-                    ? "oklch(0.62 0.18 220 / 0.3)"
+                    ? "oklch(0.58 0.19 254 / 0.14)"
                     : hasRecord
-                    ? "oklch(0.26 0.05 240)"
+                    ? "oklch(0.965 0.004 250)"
                     : "transparent",
                   border: isSelected
-                    ? "1.5px solid oklch(0.62 0.18 220)"
+                    ? "1.5px solid oklch(0.58 0.19 254)"
                     : isToday
                     ? "1.5px solid oklch(0.62 0.18 220 / 0.5)"
                     : hasRecord
-                    ? "1px solid oklch(0.32 0.04 240)"
+                    ? "1px solid oklch(0.92 0.006 250)"
                     : "1px solid transparent",
                 }}
               >
@@ -207,12 +207,12 @@ export default function CalendarView() {
                   className="text-xs font-semibold leading-none"
                   style={{
                     color: isToday
-                      ? "oklch(0.62 0.18 220)"
+                      ? "oklch(0.58 0.19 254)"
                       : dow === 0
                       ? "oklch(0.65 0.22 25)"
                       : dow === 6
-                      ? "oklch(0.62 0.18 220)"
-                      : "oklch(0.85 0.02 220)",
+                      ? "oklch(0.58 0.19 254)"
+                      : "oklch(0.30 0.03 252)",
                     fontWeight: isToday ? 700 : 500,
                   }}
                 >
@@ -239,9 +239,9 @@ export default function CalendarView() {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: "1px solid oklch(0.28 0.04 240)" }}>
+        <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: "1px solid oklch(0.92 0.006 250)" }}>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.26 0.05 240)", border: "1px solid oklch(0.32 0.04 240)" }} />
+            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.965 0.004 250)", border: "1px solid oklch(0.92 0.006 250)" }} />
             <span className="text-[10px] text-muted-foreground">記録あり</span>
           </div>
           {targetCalories && (
@@ -263,10 +263,10 @@ export default function CalendarView() {
       <Dialog open={!!selectedDate} onOpenChange={(open) => { if (!open) setSelectedDate(null); }}>
         <DialogContent
           className="max-w-sm mx-auto rounded-2xl"
-          style={{ background: "oklch(0.18 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
         >
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-white">
+            <DialogTitle className="text-lg font-bold text-slate-900">
               {selectedDate
                 ? `${Number(selectedDate.split("-")[1])}月${Number(selectedDate.split("-")[2])}日の食事`
                 : ""}
@@ -288,7 +288,7 @@ export default function CalendarView() {
                       <div className="text-[9px] text-muted-foreground">{label}</div>
                       <div
                         className="text-base font-bold mt-0.5"
-                        style={{ color: accent ? "oklch(0.62 0.18 220)" : "oklch(0.90 0.01 220)" }}
+                        style={{ color: accent ? "oklch(0.58 0.19 254)" : "oklch(0.90 0.01 220)" }}
                       >
                         {value}
                       </div>
@@ -317,7 +317,7 @@ export default function CalendarView() {
                               style={INNER}
                             >
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-white truncate">{item.description ?? "食事記録"}</div>
+                                <div className="text-sm font-semibold text-slate-900 truncate">{item.description ?? "食事記録"}</div>
                                 <div className="text-[10px] text-muted-foreground mt-0.5">
                                   P {Math.round(Number(item.proteinG))}g ·
                                   F {Math.round(Number(item.fatG))}g ·
@@ -326,7 +326,7 @@ export default function CalendarView() {
                               </div>
                               <div
                                 className="text-sm font-bold shrink-0"
-                                style={{ color: "oklch(0.62 0.18 220)" }}
+                                style={{ color: "oklch(0.58 0.19 254)" }}
                               >
                                 {Math.round(Number(item.calories))}
                                 <span className="text-[9px] font-normal text-muted-foreground ml-0.5">kcal</span>

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl, todayDateString } from "@/lib/labels";
+import FoodSearch from "@/components/FoodSearch";
 import { trpc } from "@/lib/trpc";
 import { mealMotivation } from "@/lib/motivation";
 import { Camera, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
@@ -23,13 +24,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 type Analysis = {
@@ -80,10 +81,10 @@ function ConvenienceModal({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         className="max-w-lg w-full max-h-[85vh] flex flex-col gap-0 p-0 rounded-2xl overflow-hidden"
-        style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
       >
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border flex-shrink-0">
-          <DialogTitle className="text-lg font-bold text-white">
+          <DialogTitle className="text-lg font-bold text-slate-900">
             コンビニ商品から選ぶ
           </DialogTitle>
         </DialogHeader>
@@ -145,14 +146,14 @@ function ConvenienceModal({
                   }}
                 >
                   <div className="flex items-start gap-2.5">
-                    <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
+                    <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-white leading-snug">{item.name}</div>
+                      <div className="text-sm font-semibold text-slate-900 leading-snug">{item.name}</div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">
                         {item.chain === "seven" ? "セブン-イレブン" : item.chain === "familymart" ? "ファミリーマート" : "ローソン"}
                         {item.priceYen ? ` · ¥${item.priceYen}` : ""}
                       </div>
-                      <div className="text-xs mt-1 font-semibold" style={{ color: "oklch(0.62 0.18 220)" }}>
+                      <div className="text-xs mt-1 font-semibold" style={{ color: "oklch(0.58 0.19 254)" }}>
                         {Number(item.calories)}kcal
                         <span className="text-muted-foreground font-normal ml-1.5">
                           P{Number(item.proteinG)}g / F{Number(item.fatG)}g / C{Number(item.carbsG)}g
@@ -184,6 +185,7 @@ export default function Meals() {
   const [convenienceOpen, setConvenienceOpen] = useState(false);
   const [nameQuery, setNameQuery] = useState("");
   const [editing, setEditing] = useState<MealRow | null>(null);
+  const [addMeal, setAddMeal] = useState<(typeof MEAL_TYPES)[number] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
@@ -336,7 +338,7 @@ export default function Meals() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">MEALS</div>
-        <h1 className="text-2xl font-bold text-white">食事を記録</h1>
+        <h1 className="text-2xl font-bold text-slate-900">食事を記録</h1>
       </div>
 
       {/* 入力フォーム */}
@@ -422,7 +424,7 @@ export default function Meals() {
             <Button
               type="button"
               className="h-11 px-4 gap-1.5 font-semibold rounded-xl flex-shrink-0"
-              style={{ background: "oklch(0.62 0.18 220)" }}
+              style={{ background: "oklch(0.58 0.19 254)" }}
               disabled={estimateM.isPending || !nameQuery.trim()}
               onClick={onSearchByName}
             >
@@ -446,7 +448,7 @@ export default function Meals() {
             <button
               type="button"
               className="text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
-              style={{ color: "oklch(0.62 0.18 220)" }}
+              style={{ color: "oklch(0.58 0.19 254)" }}
               disabled={copyM.isPending}
               onClick={() => copyM.mutate({ fromDate: yesterdayStr, toDate: date })}
             >
@@ -461,9 +463,9 @@ export default function Meals() {
                   type="button"
                   onClick={() => onSelectFrequent(item)}
                   className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                  style={{ background: "oklch(0.24 0.04 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+                  style={{ background: "oklch(0.965 0.004 250)", border: "1px solid oklch(0.92 0.006 250)" }}
                 >
-                  <span className="text-white">{item.name}</span>
+                  <span className="text-slate-900">{item.name}</span>
                   <span className="text-muted-foreground ml-1.5">{item.calories}kcal</span>
                 </button>
               ))}
@@ -519,13 +521,13 @@ export default function Meals() {
         <div className="section-label mb-3">選択日の合計</div>
         <div className="flex items-end gap-4">
           <div>
-            <div className="text-3xl font-bold text-white leading-none">
+            <div className="text-3xl font-bold text-slate-900 leading-none">
               {Math.round(summaryQ.data?.calories ?? 0)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">kcal</div>
           </div>
           <div className="grid grid-cols-3 gap-3 text-xs flex-1 pb-0.5">
-            <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.62 0.18 220)" />
+            <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.58 0.19 254)" />
             <MacroStat label="脂質" value={Math.round(summaryQ.data?.fatG ?? 0)} color="oklch(0.75 0.18 55)" />
             <MacroStat label="炭水化物" value={Math.round(summaryQ.data?.carbsG ?? 0)} color="oklch(0.72 0.18 155)" />
           </div>
@@ -539,8 +541,8 @@ export default function Meals() {
         return (
           <div key={t} className="rounded-xl px-4 py-4" style={CARD}>
             <div className="flex items-center justify-between mb-3">
-              <div className="text-base font-bold text-white">{MEAL_TYPE_LABELS[t]}</div>
-              <div className="text-xs font-semibold" style={{ color: "oklch(0.62 0.18 220)" }}>
+              <div className="text-base font-bold text-slate-900">{MEAL_TYPE_LABELS[t]}</div>
+              <div className="text-xs font-semibold" style={{ color: "oklch(0.58 0.19 254)" }}>
                 {Math.round(kcal)} kcal · {list.length}件
               </div>
             </div>
@@ -558,7 +560,7 @@ export default function Meals() {
                       <img src={m.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-white truncate">
+                      <div className="text-sm font-semibold text-slate-900 truncate">
                         {m.description || "（内容未入力）"}
                       </div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -567,7 +569,7 @@ export default function Meals() {
                       </div>
                     </div>
                     <button
-                      className="tap-target text-muted-foreground hover:text-white rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                      className="tap-target text-muted-foreground hover:text-slate-900 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
                       aria-label="編集"
                       onClick={() => setEditing(m as MealRow)}
                     >
@@ -584,9 +586,22 @@ export default function Meals() {
                 ))}
               </div>
             )}
+            {/* MyFitnessPal風: フードを追加（検索・履歴・AI） */}
+            <button
+              onClick={() => setAddMeal(t)}
+              className="w-full mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors"
+              style={{ background: "oklch(0.95 0.02 254)", color: "oklch(0.58 0.19 254)" }}
+            >
+              <Plus className="h-4 w-4" /> フードを追加
+            </button>
           </div>
         );
       })}
+
+      {/* MyFitnessPal風 フード検索（全画面） */}
+      {addMeal && (
+        <FoodSearch date={date} initialMealType={addMeal} onClose={() => setAddMeal(null)} />
+      )}
 
       {/* コンビニ商品検索モーダル */}
       <ConvenienceModal
@@ -667,14 +682,14 @@ function EditMealModal({
             <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-11" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <NumField label="カロリー (KCAL)" value={calories} onChange={setCalories} />
-            <NumField label="タンパク質 (G)" value={proteinG} onChange={setProteinG} />
-            <NumField label="脂質 (G)" value={fatG} onChange={setFatG} />
-            <NumField label="炭水化物 (G)" value={carbsG} onChange={setCarbsG} />
+            <NumField label="カロリー (kcal)" value={calories} onChange={setCalories} />
+            <NumField label="タンパク質 (g)" value={proteinG} onChange={setProteinG} />
+            <NumField label="脂質 (g)" value={fatG} onChange={setFatG} />
+            <NumField label="炭水化物 (g)" value={carbsG} onChange={setCarbsG} />
           </div>
           <Button
             className="w-full h-12 font-bold rounded-xl"
-            style={{ background: "oklch(0.62 0.18 220)" }}
+            style={{ background: "oklch(0.58 0.19 254)" }}
             disabled={saving}
             onClick={() =>
               onSave({

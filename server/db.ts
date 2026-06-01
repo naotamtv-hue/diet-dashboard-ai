@@ -118,6 +118,13 @@ export async function getUserByOpenId(openId: string) {
   return result[0] ?? null;
 }
 
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0] ?? null;
+}
+
 /** Manus移行ユーザーのclaim用: パスワードを後付けして名前も更新する。 */
 export async function setUserPassword(userId: number, passwordHash: string, name: string) {
   const db = await requireDb();
@@ -461,6 +468,11 @@ const DEFAULT_EXERCISES: { bodyPart: InsertExercise["bodyPart"]; name: string }[
   { bodyPart: "arms", name: "ケーブルプレスダウン" },
   { bodyPart: "abs", name: "アブドミナル" },
   { bodyPart: "abs", name: "プランク" },
+  { bodyPart: "cardio", name: "ランニング" },
+  { bodyPart: "cardio", name: "ウォーキング" },
+  { bodyPart: "cardio", name: "エアロバイク" },
+  { bodyPart: "cardio", name: "トレッドミル" },
+  { bodyPart: "cardio", name: "縄跳び" },
 ];
 
 export async function listExercises(userId: number) {
@@ -638,6 +650,41 @@ export async function frequentMeals(userId: number, limit = 8) {
   return Array.from(map.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+/** 過去に記録した食品の履歴（name重複は最新を採用）。最大limit件、新しい順。 */
+export async function foodHistory(userId: number, limit = 100) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(meals)
+    .where(eq(meals.userId, userId))
+    .orderBy(desc(meals.id))
+    .limit(800);
+  const seen = new Set<string>();
+  const out: {
+    name: string;
+    mealType: (typeof rows)[number]["mealType"];
+    calories: number;
+    proteinG: number;
+    fatG: number;
+    carbsG: number;
+  }[] = [];
+  for (const r of rows) {
+    const name = (r.description ?? "").trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    out.push({
+      name,
+      mealType: r.mealType,
+      calories: Number(r.calories),
+      proteinG: Number(r.proteinG),
+      fatG: Number(r.fatG),
+      carbsG: Number(r.carbsG),
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 /** ある日付の食事を別の日付へ複製する（「昨日と同じ」用）。複製件数を返す。 */

@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   Copy,
   Dumbbell,
+  Flame,
+  Loader2,
   Pause,
   Play,
   Plus,
@@ -19,14 +21,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
-const ACCENT = "oklch(0.62 0.18 220)";
+const ACCENT = "oklch(0.58 0.19 254)";
+const GREEN = "oklch(0.62 0.16 155)";
 
 const BODY_PARTS = ["chest", "back", "legs", "shoulders", "arms", "abs", "cardio", "other"] as const;
 type BodyPart = (typeof BODY_PARTS)[number];
@@ -83,15 +86,19 @@ export default function Strength() {
   }, [setsByDateQ.data]);
 
   if (selected) {
+    const onBack = () => {
+      setSelected(null);
+      utils.strength.setsByDate.invalidate({ date: today });
+    };
+    if (selected.bodyPart === "cardio") {
+      return <CardioLogger date={today} exerciseName={selected.name} onBack={onBack} />;
+    }
     return (
       <ExerciseLogger
         date={today}
         bodyPart={selected.bodyPart}
         exerciseName={selected.name}
-        onBack={() => {
-          setSelected(null);
-          utils.strength.setsByDate.invalidate({ date: today });
-        }}
+        onBack={onBack}
       />
     );
   }
@@ -105,12 +112,12 @@ export default function Strength() {
       <div className="flex items-end justify-between pt-1">
         <div>
           <div className="section-label mb-1">STRENGTH</div>
-          <h1 className="text-2xl font-bold text-white">筋トレ</h1>
+          <h1 className="text-2xl font-bold text-slate-900">筋トレ</h1>
         </div>
         <button
           onClick={() => setTool("rm")}
           className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-          style={{ background: "oklch(0.62 0.18 220 / 0.18)", color: ACCENT, border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}
+          style={{ background: "oklch(0.58 0.19 254 / 0.1)", color: ACCENT, border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}
         >
           <Calculator className="h-3.5 w-3.5" /> RM計算機
         </button>
@@ -122,7 +129,7 @@ export default function Strength() {
           <Dumbbell className="h-3.5 w-3.5" /> 今日の記録
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl px-4 py-3" style={{ background: "oklch(0.62 0.18 220 / 0.15)", border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}>
+          <div className="rounded-xl px-4 py-3" style={{ background: "oklch(0.58 0.19 254 / 0.1)", border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}>
             <div className="text-[10px] font-medium text-muted-foreground">合計負荷量</div>
             <div className="text-2xl font-bold mt-1" style={{ color: ACCENT }}>
               {(volume / 1000).toFixed(2)}<span className="text-sm font-normal text-muted-foreground ml-1">t</span>
@@ -130,7 +137,7 @@ export default function Strength() {
           </div>
           <div className="rounded-xl px-4 py-3" style={INNER}>
             <div className="text-[10px] font-medium text-muted-foreground">セット数</div>
-            <div className="text-2xl font-bold text-white mt-1">{setsByDateQ.data?.length ?? 0}</div>
+            <div className="text-2xl font-bold text-slate-900 mt-1">{setsByDateQ.data?.length ?? 0}</div>
           </div>
         </div>
       </div>
@@ -145,7 +152,7 @@ export default function Strength() {
             style={
               bodyPart === p
                 ? { background: ACCENT, color: "white" }
-                : { background: "oklch(0.24 0.04 240)", color: "oklch(0.65 0.03 220)" }
+                : { background: "oklch(0.965 0.004 250)", color: "oklch(0.55 0.02 252)" }
             }
           >
             {BODY_PART_LABELS[p]}
@@ -171,9 +178,9 @@ export default function Strength() {
                 style={INNER}
               >
                 <Dumbbell className="h-4 w-4 flex-shrink-0" style={{ color: ACCENT }} />
-                <span className="flex-1 text-sm font-semibold text-white">{ex.name}</span>
+                <span className="flex-1 text-sm font-semibold text-slate-900">{ex.name}</span>
                 {doneCount[ex.name] ? (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "oklch(0.62 0.18 220 / 0.2)", color: ACCENT }}>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "oklch(0.58 0.19 254 / 0.12)", color: ACCENT }}>
                     {doneCount[ex.name]}セット
                   </span>
                 ) : null}
@@ -244,21 +251,21 @@ function HistorySection({ onPick }: { onPick: (p: BodyPart) => void }) {
       <div className="space-y-2 pt-1">
         {rows.map((r) => (
           <div key={r.date} className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={INNER}>
-            <div className="text-sm font-bold text-white w-14 flex-shrink-0">{md(r.date)}</div>
+            <div className="text-sm font-bold text-slate-900 w-14 flex-shrink-0">{md(r.date)}</div>
             <div className="flex flex-wrap gap-1 flex-1 min-w-0">
               {r.bodyParts.map((bp) => (
                 <button
                   key={bp}
                   onClick={() => onPick(bp as BodyPart)}
                   className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: "oklch(0.62 0.18 220 / 0.18)", color: ACCENT }}
+                  style={{ background: "oklch(0.58 0.19 254 / 0.1)", color: ACCENT }}
                 >
                   {BODY_PART_LABELS[bp as BodyPart] ?? bp}
                 </button>
               ))}
             </div>
             <div className="text-right flex-shrink-0">
-              <div className="text-sm font-bold text-white tabular-nums">{(r.volume / 1000).toFixed(2)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">t</span></div>
+              <div className="text-sm font-bold text-slate-900 tabular-nums">{(r.volume / 1000).toFixed(2)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">t</span></div>
               <div className="text-[10px] text-muted-foreground">{r.sets}セット</div>
             </div>
           </div>
@@ -307,6 +314,147 @@ function AddExerciseButton({ bodyPart, onAdded }: { bodyPart: BodyPart; onAdded:
 }
 
 /* ───────────────── 種目ログ画面（セット記録＋タイマー＋RM） ───────────────── */
+/* ───────────────── 有酸素ログ画面（分数→消費カロリー自動計算） ───────────────── */
+function CardioLogger({ date, exerciseName, onBack }: { date: string; exerciseName: string; onBack: () => void }) {
+  const utils = trpc.useUtils();
+  const [minutes, setMinutes] = useState("");
+  const [incline, setIncline] = useState(false);
+  const [kcal, setKcal] = useState<number | null>(null);
+  const [reason, setReason] = useState("");
+
+  const estimateM = trpc.workouts.estimateCalories.useMutation();
+  const addM = trpc.workouts.add.useMutation({
+    onSuccess: () => utils.workouts.listByDate.invalidate({ date }),
+  });
+
+  useEffect(() => {
+    setKcal(null);
+    setReason("");
+  }, [minutes, incline]);
+
+  const estimate = async () => {
+    if (!minutes || Number(minutes) <= 0) {
+      toast.error("時間（分）を入力してください");
+      return null;
+    }
+    const res = await estimateM.mutateAsync({
+      activity: exerciseName,
+      durationMin: Number(minutes),
+      intensity: "medium",
+      incline,
+    });
+    setKcal(res.caloriesBurned);
+    setReason(res.reasoning);
+    return res.caloriesBurned;
+  };
+
+  const save = async () => {
+    if (!minutes || Number(minutes) <= 0) {
+      toast.error("時間（分）を入力してください");
+      return;
+    }
+    let burned = kcal;
+    try {
+      if (burned == null) burned = await estimate();
+    } catch {
+      /* 推定失敗でも保存は続行 */
+    }
+    const res = await addM.mutateAsync({
+      date,
+      activity: exerciseName,
+      durationMin: Number(minutes),
+      intensity: "medium",
+      incline,
+      caloriesBurned: burned ?? null,
+      weightKg: null,
+      reps: null,
+      sets: null,
+      note: null,
+    });
+    const k = burned ?? res.estimatedCalories ?? 0;
+    toast.success(`記録しました（消費 約${Math.round(k)}kcal）🔥`, { duration: 4000 });
+    onBack();
+  };
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="flex items-center gap-2 pt-1">
+        <button onClick={onBack} className="tap-target text-muted-foreground hover:text-foreground -ml-2">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="section-label">有酸素</div>
+          <h1 className="text-xl font-bold text-foreground truncate">{exerciseName}</h1>
+        </div>
+      </div>
+
+      <RestTimer />
+
+      <div className="rounded-xl px-4 py-4 bg-card border border-border space-y-3">
+        <div className="space-y-1.5">
+          <Label className="section-label">時間（分）</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+            placeholder="30"
+            className="h-12 text-lg"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="section-label">傾斜（坂・階段・トレッドミルの傾斜）</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { v: false, label: "なし（平地）" },
+              { v: true, label: "あり（消費↑）" },
+            ].map((opt) => (
+              <button
+                key={String(opt.v)}
+                type="button"
+                onClick={() => setIncline(opt.v)}
+                className="py-2.5 rounded-xl text-sm font-semibold transition-colors border"
+                style={
+                  incline === opt.v
+                    ? { background: ACCENT, color: "white", borderColor: "transparent" }
+                    : { background: "oklch(0.965 0.004 250)", color: "oklch(0.5 0.02 252)", borderColor: "oklch(0.92 0.006 250)" }
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-11 gap-2 font-semibold rounded-xl"
+          disabled={estimateM.isPending}
+          onClick={() => estimate().catch((e) => toast.error(e instanceof Error ? e.message : "計算に失敗"))}
+        >
+          {estimateM.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flame className="h-4 w-4" />}
+          消費カロリーを計算
+        </Button>
+
+        {kcal !== null && (
+          <div className="rounded-xl px-4 py-3" style={{ background: "oklch(0.97 0.02 155)", border: "1px solid oklch(0.85 0.08 155)" }}>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold" style={{ color: GREEN }}>{Math.round(kcal)}</span>
+              <span className="text-sm text-muted-foreground">kcal 消費（推定）</span>
+            </div>
+            {reason && <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{reason}</div>}
+          </div>
+        )}
+      </div>
+
+      <Button onClick={save} disabled={addM.isPending} className="w-full h-12 font-bold rounded-xl" style={{ background: ACCENT }}>
+        {addM.isPending ? "保存中..." : "保存する"}
+      </Button>
+    </div>
+  );
+}
+
 function ExerciseLogger({
   date,
   bodyPart,
@@ -388,12 +536,12 @@ function ExerciseLogger({
     <div className="space-y-4 pb-4">
       {/* ヘッダー */}
       <div className="flex items-center gap-2 pt-1">
-        <button onClick={onBack} className="tap-target text-muted-foreground hover:text-white -ml-2">
+        <button onClick={onBack} className="tap-target text-muted-foreground hover:text-slate-900 -ml-2">
           <ChevronLeft className="h-6 w-6" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="section-label">{BODY_PART_LABELS[bodyPart]}</div>
-          <h1 className="text-xl font-bold text-white truncate">{exerciseName}</h1>
+          <h1 className="text-xl font-bold text-slate-900 truncate">{exerciseName}</h1>
         </div>
       </div>
 
@@ -445,7 +593,7 @@ function ExerciseLogger({
                 className="h-11"
               />
               <div className="flex items-center justify-end gap-1">
-                <span className="text-xs font-semibold text-white tabular-nums w-7 text-right">{rm || "-"}</span>
+                <span className="text-xs font-semibold text-slate-900 tabular-nums w-7 text-right">{rm || "-"}</span>
                 <button
                   onClick={() => removeRow(i)}
                   className="text-muted-foreground hover:text-destructive flex-shrink-0"
@@ -461,7 +609,7 @@ function ExerciseLogger({
         <button
           onClick={addRow}
           className="w-full flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold mt-1"
-          style={{ background: "oklch(0.24 0.04 240)", color: ACCENT }}
+          style={{ background: "oklch(0.965 0.004 250)", color: ACCENT }}
         >
           <Plus className="h-4 w-4" /> セットを追加
         </button>
@@ -470,7 +618,7 @@ function ExerciseLogger({
       {/* 合計負荷量 */}
       <div className="flex items-center justify-between rounded-xl px-4 py-3" style={INNER}>
         <span className="text-xs text-muted-foreground">この種目の負荷量</span>
-        <span className="text-lg font-bold text-white">
+        <span className="text-lg font-bold text-slate-900">
           {volume.toLocaleString()}<span className="text-xs font-normal text-muted-foreground ml-1">kg</span>
         </span>
       </div>
@@ -527,7 +675,7 @@ function RestTimer() {
     <div className="rounded-xl px-4 py-3" style={CARD}>
       <div className="flex items-center gap-3">
         <Timer className="h-5 w-5 flex-shrink-0" style={{ color: remaining === 0 ? "oklch(0.72 0.18 155)" : ACCENT }} />
-        <div className="text-3xl font-bold text-white tabular-nums w-[72px]">{mm}:{ss}</div>
+        <div className="text-3xl font-bold text-slate-900 tabular-nums w-[72px]">{mm}:{ss}</div>
         <div className="flex gap-1.5 ml-auto">
           <button
             onClick={running ? () => setRunning(false) : start}
@@ -535,12 +683,12 @@ function RestTimer() {
             style={{ background: ACCENT }}
             aria-label={running ? "一時停止" : "開始"}
           >
-            {running ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+            {running ? <Pause className="h-4 w-4 text-slate-900" /> : <Play className="h-4 w-4 text-slate-900" />}
           </button>
           <button
             onClick={reset}
             className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "oklch(0.24 0.04 240)" }}
+            style={{ background: "oklch(0.965 0.004 250)" }}
             aria-label="リセット"
           >
             <RotateCcw className="h-4 w-4 text-muted-foreground" />
@@ -553,7 +701,7 @@ function RestTimer() {
             key={v}
             onClick={() => setP(v)}
             className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-            style={preset === v ? { background: "oklch(0.62 0.18 220 / 0.25)", color: ACCENT } : { background: "oklch(0.24 0.04 240)", color: "oklch(0.6 0.03 220)" }}
+            style={preset === v ? { background: "oklch(0.62 0.18 220 / 0.25)", color: ACCENT } : { background: "oklch(0.965 0.004 250)", color: "oklch(0.6 0.03 220)" }}
           >
             {v}秒
           </button>
@@ -586,12 +734,12 @@ function RmCalculator({ onBack }: { onBack: () => void }) {
   return (
     <div className="space-y-4 pb-4">
       <div className="flex items-center gap-2 pt-1">
-        <button onClick={onBack} className="tap-target text-muted-foreground hover:text-white -ml-2">
+        <button onClick={onBack} className="tap-target text-muted-foreground hover:text-slate-900 -ml-2">
           <ChevronLeft className="h-6 w-6" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="section-label">STRENGTH</div>
-          <h1 className="text-xl font-bold text-white">RM計算機</h1>
+          <h1 className="text-xl font-bold text-slate-900">RM計算機</h1>
         </div>
       </div>
 
@@ -623,7 +771,7 @@ function RmCalculator({ onBack }: { onBack: () => void }) {
         </div>
 
         {/* 推定1RM */}
-        <div className="rounded-xl px-4 py-4 text-center" style={{ background: "oklch(0.62 0.18 220 / 0.15)", border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}>
+        <div className="rounded-xl px-4 py-4 text-center" style={{ background: "oklch(0.58 0.19 254 / 0.1)", border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}>
           <div className="text-[10px] font-medium text-muted-foreground">推定1RM（Epley式）</div>
           <div className="text-4xl font-bold mt-1" style={{ color: ACCENT }}>
             {rm || "-"}<span className="text-base font-normal text-muted-foreground ml-1">kg</span>
@@ -638,7 +786,7 @@ function RmCalculator({ onBack }: { onBack: () => void }) {
           RM_PERCENTS.map((p) => (
             <div key={p.pct} className="flex items-center gap-3 rounded-lg px-3 py-2" style={INNER}>
               <span className="text-xs font-bold w-9 flex-shrink-0" style={{ color: ACCENT }}>{p.pct}%</span>
-              <span className="text-lg font-bold text-white tabular-nums flex-1">
+              <span className="text-lg font-bold text-slate-900 tabular-nums flex-1">
                 {Math.round((rm * p.pct) / 100)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">kg</span>
               </span>
               <span className="text-[10px] text-muted-foreground flex-shrink-0">目安 {p.reps}</span>

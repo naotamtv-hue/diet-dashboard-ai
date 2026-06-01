@@ -22,7 +22,7 @@ const buttonVariants = cva(
           "hover:bg-primary/92 hover:shadow-[0_2px_4px_oklch(0.35_0.08_290/0.18),0_6px_16px_oklch(0.35_0.08_290/0.14)]",
         ].join(" "),
         destructive: [
-          "bg-destructive text-white rounded-lg",
+          "bg-destructive text-slate-900 rounded-lg",
           "shadow-[0_1px_2px_oklch(0.577_0.245_27/0.2)]",
           "hover:bg-destructive/90",
         ].join(" "),

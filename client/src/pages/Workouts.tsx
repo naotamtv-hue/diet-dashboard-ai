@@ -18,13 +18,13 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 export default function Workouts() {
@@ -36,6 +36,7 @@ export default function Workouts() {
   const [reps, setReps] = useState("");
   const [sets, setSets] = useState("");
   const [note, setNote] = useState("");
+  const [incline, setIncline] = useState(false);
   const [estimatedKcal, setEstimatedKcal] = useState<number | null>(null);
   const [estimateNote, setEstimateNote] = useState("");
 
@@ -50,7 +51,7 @@ export default function Workouts() {
   useEffect(() => {
     setEstimatedKcal(null);
     setEstimateNote("");
-  }, [activity, durationMin, weightKg, reps, sets, intensity]);
+  }, [activity, durationMin, weightKg, reps, sets, intensity, incline]);
 
   const onEstimate = async () => {
     if (!activity.trim()) {
@@ -69,6 +70,7 @@ export default function Workouts() {
         weightKg: weightKg ? Number(weightKg) : null,
         reps: reps ? Number(reps) : null,
         sets: sets ? Number(sets) : null,
+        incline,
       });
       setEstimatedKcal(res.caloriesBurned);
       setEstimateNote(res.reasoning);
@@ -94,6 +96,7 @@ export default function Workouts() {
       reps: reps ? Number(reps) : null,
       sets: sets ? Number(sets) : null,
       caloriesBurned: estimatedKcal,
+      incline,
       note: note || null,
     });
     const kcal = estimatedKcal ?? res.estimatedCalories ?? 0;
@@ -116,21 +119,21 @@ export default function Workouts() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">WORKOUTS</div>
-        <h1 className="text-2xl font-bold text-white">トレーニング</h1>
+        <h1 className="text-2xl font-bold text-slate-900">トレーニング</h1>
       </div>
 
       {/* 筋トレ（種目別）への導線 */}
       <Link href="/strength">
         <button
           className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5"
-          style={{ background: "oklch(0.62 0.18 220 / 0.15)", border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}
+          style={{ background: "oklch(0.58 0.19 254 / 0.1)", border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}
         >
-          <Dumbbell className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
+          <Dumbbell className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
           <div className="flex-1 min-w-0 text-left">
-            <div className="text-sm font-bold text-white">筋トレを種目別に記録</div>
+            <div className="text-sm font-bold text-slate-900">筋トレを種目別に記録</div>
             <div className="text-[11px] text-muted-foreground">部位・種目ごとにセット／重量／回数・RM・タイマー</div>
           </div>
-          <span className="text-lg" style={{ color: "oklch(0.62 0.18 220)" }}>›</span>
+          <span className="text-lg" style={{ color: "oklch(0.58 0.19 254)" }}>›</span>
         </button>
       </Link>
 
@@ -184,6 +187,31 @@ export default function Workouts() {
         <div className="space-y-2">
           <Label className="section-label">時間（分・有酸素の場合）</Label>
           <Input type="number" inputMode="numeric" value={durationMin} onChange={(e) => setDurationMin(e.target.value)} placeholder="30" className="h-11" />
+        </div>
+
+        {/* 傾斜（有酸素の消費カロリーに反映） */}
+        <div className="space-y-2">
+          <Label className="section-label">傾斜（有酸素・坂/階段/トレッドミルの傾斜）</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { v: false, label: "なし（平地）" },
+              { v: true, label: "あり（消費↑）" },
+            ].map((opt) => (
+              <button
+                key={String(opt.v)}
+                type="button"
+                onClick={() => setIncline(opt.v)}
+                className="py-2.5 rounded-xl text-sm font-semibold transition-colors border"
+                style={
+                  incline === opt.v
+                    ? { background: "oklch(0.58 0.19 254)", color: "white", borderColor: "transparent" }
+                    : { background: "oklch(0.965 0.004 250)", color: "oklch(0.5 0.02 252)", borderColor: "oklch(0.92 0.006 250)" }
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 消費カロリーの計算・表示 */}
@@ -248,7 +276,7 @@ export default function Workouts() {
           </div>
           <div className="rounded-xl px-4 py-3" style={INNER}>
             <div className="text-[10px] font-medium text-muted-foreground">合計時間</div>
-            <div className="text-2xl font-bold text-white mt-1">
+            <div className="text-2xl font-bold text-slate-900 mt-1">
               {totalMin}<span className="text-sm font-normal text-muted-foreground ml-1">分</span>
             </div>
           </div>
@@ -272,7 +300,7 @@ export default function Workouts() {
                 style={INNER}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-white truncate">{w.activity}</div>
+                  <div className="text-sm font-semibold text-slate-900 truncate">{w.activity}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
                     {w.weightKg ? `${w.weightKg}kg × ${w.reps ?? "-"}回 × ${w.sets ?? "-"}セット · ` : ""}
                     {w.durationMin ? `${w.durationMin}分 · ` : ""}

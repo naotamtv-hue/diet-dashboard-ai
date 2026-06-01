@@ -17,13 +17,13 @@ import { toast } from "sonner";
 type ActivityLevel = "sedentary" | "light" | "moderate" | "active" | "veryActive";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 export default function Goal() {
@@ -94,7 +94,7 @@ export default function Goal() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">GOAL</div>
-        <h1 className="text-2xl font-bold text-white">目標設定</h1>
+        <h1 className="text-2xl font-bold text-slate-900">目標設定</h1>
       </div>
 
       {/* フォーム */}
@@ -169,8 +169,8 @@ export default function Goal() {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <PlanBox label="基礎代謝 (BMR)" value={plan.bmr} unit="kcal" />
-            <PlanBox label="消費 (TDEE)" value={plan.tdee} unit="kcal" />
+            <PlanBox label="基礎代謝" value={plan.bmr} unit="kcal" />
+            <PlanBox label="消費カロリー" value={plan.tdee} unit="kcal" />
             <PlanBox label="1日の目安" value={plan.targetCalories} unit="kcal" highlight />
           </div>
 
@@ -182,7 +182,7 @@ export default function Goal() {
           <div className="rounded-xl px-4 py-3" style={INNER}>
             <div className="section-label mb-3">PFC目安（タンパク質・脂質・炭水化物）</div>
             <div className="flex gap-6">
-              <PfcItem label="タンパク質" value={plan.pfc.proteinG} color="oklch(0.62 0.18 220)" />
+              <PfcItem label="タンパク質" value={plan.pfc.proteinG} color="oklch(0.58 0.19 254)" />
               <PfcItem label="脂質" value={plan.pfc.fatG} color="oklch(0.75 0.18 55)" />
               <PfcItem label="炭水化物" value={plan.pfc.carbsG} color="oklch(0.72 0.18 155)" />
             </div>
@@ -198,14 +198,14 @@ function PlanBox({ label, value, unit, highlight }: { label: string; value: numb
     <div
       className="rounded-xl px-3 py-3"
       style={{
-        background: highlight ? "oklch(0.62 0.18 220 / 0.15)" : "oklch(0.24 0.04 240)",
-        border: `1px solid ${highlight ? "oklch(0.62 0.18 220 / 0.4)" : "oklch(0.30 0.04 240)"}`,
+        background: highlight ? "oklch(0.58 0.19 254 / 0.1)" : "oklch(0.965 0.004 250)",
+        border: `1px solid ${highlight ? "oklch(0.58 0.19 254 / 0.16)" : "oklch(0.92 0.006 250)"}`,
       }}
     >
       <div className="text-[10px] font-medium text-muted-foreground leading-tight">{label}</div>
       <div
         className="text-lg font-bold leading-none mt-1"
-        style={{ color: highlight ? "oklch(0.62 0.18 220)" : "oklch(0.95 0.01 220)" }}
+        style={{ color: highlight ? "oklch(0.58 0.19 254)" : "oklch(0.24 0.03 252)" }}
       >
         {value}
       </div>

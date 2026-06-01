@@ -19,13 +19,13 @@ import {
 import { toast } from "sonner";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 export default function Weight() {
@@ -84,7 +84,7 @@ export default function Weight() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">WEIGHT</div>
-        <h1 className="text-2xl font-bold text-white">体重の推移</h1>
+        <h1 className="text-2xl font-bold text-slate-900">体重の推移</h1>
       </div>
 
       {/* サマリー */}
@@ -126,25 +126,25 @@ export default function Weight() {
                     <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="oklch(0.28 0.04 240)" strokeDasharray="2 4" />
+                <CartesianGrid stroke="oklch(0.92 0.006 250)" strokeDasharray="2 4" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fill: "oklch(0.55 0.03 220)" }}
+                  tick={{ fontSize: 10, fill: "oklch(0.58 0.02 252)" }}
                   stroke="transparent"
                 />
                 <YAxis
                   domain={[Math.floor(minW), Math.ceil(maxW)]}
-                  tick={{ fontSize: 10, fill: "oklch(0.55 0.03 220)" }}
+                  tick={{ fontSize: 10, fill: "oklch(0.58 0.02 252)" }}
                   stroke="transparent"
                   width={32}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "oklch(0.22 0.05 240)",
-                    border: "1px solid oklch(0.30 0.04 240)",
+                    background: "oklch(1 0 0)",
+                    border: "1px solid oklch(0.92 0.006 250)",
                     borderRadius: 10,
                     fontSize: 12,
-                    color: "oklch(0.95 0.01 220)",
+                    color: "oklch(0.24 0.03 252)",
                   }}
                   formatter={(v: number) => [`${v.toFixed(1)} kg`, "体重"]}
                 />
@@ -216,7 +216,7 @@ export default function Weight() {
                   style={INNER}
                 >
                   <div className="flex-1">
-                    <div className="text-xl font-bold text-white leading-none">
+                    <div className="text-xl font-bold text-slate-900 leading-none">
                       {Number(r.weightKg).toFixed(1)}{" "}
                       <span className="text-sm font-normal text-muted-foreground">kg</span>
                     </div>
@@ -244,14 +244,14 @@ function WeightBox({ label, value, highlight }: { label: string; value: string; 
     <div
       className="rounded-xl px-3 py-3 text-center"
       style={{
-        background: highlight ? "oklch(0.62 0.18 220 / 0.15)" : "oklch(0.24 0.04 240)",
-        border: `1px solid ${highlight ? "oklch(0.62 0.18 220 / 0.4)" : "oklch(0.30 0.04 240)"}`,
+        background: highlight ? "oklch(0.58 0.19 254 / 0.1)" : "oklch(0.965 0.004 250)",
+        border: `1px solid ${highlight ? "oklch(0.58 0.19 254 / 0.16)" : "oklch(0.92 0.006 250)"}`,
       }}
     >
       <div className="text-[10px] font-medium text-muted-foreground">{label}</div>
       <div
         className="text-xl font-bold mt-1 leading-none"
-        style={{ color: highlight ? "oklch(0.62 0.18 220)" : "oklch(0.95 0.01 220)" }}
+        style={{ color: highlight ? "oklch(0.58 0.19 254)" : "oklch(0.24 0.03 252)" }}
       >
         {value}
       </div>

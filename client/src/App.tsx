@@ -13,6 +13,7 @@ import NotFound from "@/pages/NotFound";
 import Photos from "@/pages/Photos";
 import Settings from "@/pages/Settings";
 import Strength from "@/pages/Strength";
+import Trainer from "@/pages/Trainer";
 import Weight from "@/pages/Weight";
 import Workouts from "@/pages/Workouts";
 import CalendarView from "@/pages/CalendarView";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/weight" component={Weight} />
       <Route path="/workouts" component={Workouts} />
       <Route path="/strength" component={Strength} />
+      <Route path="/trainer" component={Trainer} />
       <Route path="/coach" component={Coach} />
       <Route path="/convenience" component={Convenience} />
       <Route path="/photos" component={Photos} />

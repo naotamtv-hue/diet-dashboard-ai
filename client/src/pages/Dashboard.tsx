@@ -49,14 +49,14 @@ function CalorieRing({
         <circle
           cx={size / 2} cy={size / 2} r={r}
           fill="none"
-          stroke="oklch(0.28 0.04 240)"
+          stroke="oklch(0.92 0.006 250)"
           strokeWidth={stroke}
         />
         {/* Consumed */}
         <circle
           cx={size / 2} cy={size / 2} r={r}
           fill="none"
-          stroke="oklch(0.62 0.18 220)"
+          stroke="oklch(0.58 0.19 254)"
           strokeWidth={stroke}
           strokeDasharray={`${consumedDash} ${circ}`}
           strokeLinecap="round"
@@ -78,7 +78,7 @@ function CalorieRing({
       </svg>
       {/* Center text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-2xl font-bold text-white leading-none">{Math.round(remaining)}</div>
+        <div className="text-2xl font-bold text-slate-900 leading-none">{Math.round(remaining)}</div>
         <div className="text-[10px] text-muted-foreground mt-1 font-medium">残りkcal</div>
       </div>
     </div>
@@ -102,7 +102,7 @@ function MacroRow({
     <div>
       <div className="flex justify-between items-baseline mb-1">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        <span className="text-xs font-semibold text-white">
+        <span className="text-xs font-semibold text-slate-900">
           {value}g <span className="text-muted-foreground font-normal">/ {target || "—"}g</span>
         </span>
       </div>
@@ -134,11 +134,11 @@ function QuickCard({
     <Link href={to}>
       <button
         className="w-full text-left rounded-xl px-4 py-3.5 transition-all duration-150 active:scale-[0.97] hover:brightness-110"
-        style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)", minHeight: "72px" }}
+        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)", minHeight: "72px" }}
       >
         <div className="flex items-center gap-2 mb-1" style={{ color: accent }}>
           {icon}
-          <span className="text-sm font-semibold text-white">{title}</span>
+          <span className="text-sm font-semibold text-slate-900">{title}</span>
         </div>
         <div className="text-xs text-muted-foreground">{sub}</div>
       </button>
@@ -225,18 +225,18 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">TODAY · {formatDate(today)}</div>
-        <h1 className="text-2xl font-bold text-white">今日のサマリー</h1>
+        <h1 className="text-2xl font-bold text-slate-900">今日のサマリー</h1>
       </div>
 
       {/* 目標未設定バナー */}
       {!goal && (
         <div
           className="rounded-xl px-4 py-4 flex items-center gap-3"
-          style={{ background: "oklch(0.62 0.18 220 / 0.15)", border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}
+          style={{ background: "oklch(0.58 0.19 254 / 0.1)", border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}
         >
-          <Target className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
+          <Target className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-white">まずは目標を設定しましょう</div>
+            <div className="text-sm font-semibold text-slate-900">まずは目標を設定しましょう</div>
             <div className="text-xs text-muted-foreground mt-0.5">
               目標体重・期間・活動量から1日の目安カロリーを自動計算します
             </div>
@@ -249,21 +249,12 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── 連続記録ストリーク ＋ 今日のひとことアドバイス ── */}
-      {((streakQ.data && streakQ.data.streak > 0) || adviceQ.data?.advice || adviceQ.isLoading) && (
+      {/* ── 今日のひとことアドバイス ── */}
+      {(adviceQ.data?.advice || adviceQ.isLoading) && (
         <div
           className="rounded-xl px-4 py-4 space-y-3"
-          style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
         >
-          {streakQ.data && streakQ.data.streak > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xl leading-none">🔥</span>
-              <span className="text-sm font-bold text-white">{streakQ.data.streak}日連続で記録中！</span>
-              {!streakQ.data.recordedToday && (
-                <span className="text-[11px] text-muted-foreground ml-auto">今日も記録して継続しよう</span>
-              )}
-            </div>
-          )}
           {adviceQ.isLoading && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Sparkles className="h-4 w-4 animate-pulse" style={{ color: "oklch(0.68 0.14 290)" }} />
@@ -273,7 +264,7 @@ export default function Dashboard() {
           {adviceQ.data?.advice && (
             <div className="flex items-start gap-2">
               <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.68 0.14 290)" }} />
-              <p className="text-sm text-white leading-relaxed">{adviceQ.data.advice}</p>
+              <p className="text-sm text-slate-900 leading-relaxed">{adviceQ.data.advice}</p>
             </div>
           )}
         </div>
@@ -282,7 +273,7 @@ export default function Dashboard() {
       {/* ── カロリーリングカード ── */}
       <div
         className="rounded-xl px-5 py-5"
-        style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
       >
         <div className="section-label mb-4">カロリー</div>
         <div className="flex items-center gap-6">
@@ -293,7 +284,7 @@ export default function Dashboard() {
           {/* Legend */}
           <div className="flex-1 space-y-3">
             <LegendRow
-              color="oklch(0.62 0.18 220)"
+              color="oklch(0.58 0.19 254)"
               label="摂取"
               value={`${consumed} kcal`}
             />
@@ -303,7 +294,7 @@ export default function Dashboard() {
               value={`${Math.round(burned)} kcal`}
             />
             <LegendRow
-              color="oklch(0.28 0.04 240)"
+              color="oklch(0.92 0.006 250)"
               label="目標"
               value={`${targetCal || "—"} kcal`}
             />
@@ -311,7 +302,7 @@ export default function Dashboard() {
               className="mt-2 pt-2 border-t border-border"
             >
               <div className="text-xs text-muted-foreground">あと食べられる</div>
-              <div className="text-xl font-bold text-white">
+              <div className="text-xl font-bold text-slate-900">
                 {remainingBudget} kcal
               </div>
               {burned > 0 && (
@@ -329,7 +320,7 @@ export default function Dashboard() {
             label="タンパク質"
             value={Math.round(summary?.proteinG ?? 0)}
             target={pfcTarget.p}
-            color="oklch(0.62 0.18 220)"
+            color="oklch(0.58 0.19 254)"
           />
           <MacroRow
             label="脂質"
@@ -350,13 +341,13 @@ export default function Dashboard() {
       {goal && (
         <div
           className="rounded-xl px-5 py-5"
-          style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
         >
           <div className="section-label mb-3">体重目標</div>
           <div className="flex items-end gap-3 mb-4">
             <div>
               <div className="text-xs text-muted-foreground">現在</div>
-              <div className="text-3xl font-bold text-white">{currentW.toFixed(1)}<span className="text-base font-normal text-muted-foreground ml-1">kg</span></div>
+              <div className="text-3xl font-bold text-slate-900">{currentW.toFixed(1)}<span className="text-base font-normal text-muted-foreground ml-1">kg</span></div>
             </div>
             <div className="text-muted-foreground mb-1">→</div>
             <div>
@@ -371,12 +362,12 @@ export default function Dashboard() {
           {/* Progress bar */}
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
             <span>達成率</span>
-            <span className="font-semibold text-white">{lossPct}%</span>
+            <span className="font-semibold text-slate-900">{lossPct}%</span>
           </div>
           <div className="progress-track" style={{ height: "8px" }}>
             <div
               className="progress-fill"
-              style={{ width: `${lossPct}%`, background: "linear-gradient(90deg, oklch(0.62 0.18 220), oklch(0.72 0.18 155))" }}
+              style={{ width: `${lossPct}%`, background: "linear-gradient(90deg, oklch(0.58 0.19 254), oklch(0.72 0.18 155))" }}
             />
           </div>
 
@@ -384,20 +375,20 @@ export default function Dashboard() {
           {eta && (
             <div
               className="mt-3 rounded-lg px-3 py-2.5 flex items-start gap-2"
-              style={{ background: "oklch(0.24 0.04 240)" }}
+              style={{ background: "oklch(0.965 0.004 250)" }}
             >
               <TrendingDown className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.18 155)" }} />
               <div className="text-xs text-muted-foreground leading-relaxed">
                 {eta.kind === "down" && (
                   <>
                     このペースなら{" "}
-                    <span className="font-bold text-white">
+                    <span className="font-bold text-slate-900">
                       {eta.etaDate.getFullYear()}年{eta.etaDate.getMonth() + 1}月{eta.etaDate.getDate()}日
                     </span>{" "}
                     頃に目標達成（週{Math.abs(eta.perWeek).toFixed(1)}kgペース）
                   </>
                 )}
-                {eta.kind === "reached" && <span className="text-white font-semibold">目標体重に到達しています！🎉</span>}
+                {eta.kind === "reached" && <span className="text-slate-900 font-semibold">目標体重に到達しています！🎉</span>}
                 {eta.kind === "stalled" && "最近は横ばい。食事か運動を少し見直すと動き出します"}
               </div>
             </div>
@@ -406,17 +397,17 @@ export default function Dashboard() {
           {/* BMR / TDEE */}
           <div className="grid grid-cols-3 gap-2 mt-4">
             {[
-              { label: "BMR", value: Math.round(Number(goal.bmr)) },
-              { label: "TDEE", value: Math.round(Number(goal.tdee)) },
+              { label: "基礎代謝", value: Math.round(Number(goal.bmr)) },
+              { label: "消費カロリー", value: Math.round(Number(goal.tdee)) },
               { label: "目標", value: Math.round(Number(goal.targetCalories)) },
             ].map(({ label, value }) => (
               <div
                 key={label}
                 className="rounded-lg px-3 py-2.5 text-center"
-                style={{ background: "oklch(0.24 0.04 240)" }}
+                style={{ background: "oklch(0.965 0.004 250)" }}
               >
                 <div className="text-[10px] font-medium text-muted-foreground">{label}</div>
-                <div className="text-base font-bold text-white mt-0.5">{value}</div>
+                <div className="text-base font-bold text-slate-900 mt-0.5">{value}</div>
                 <div className="text-[10px] text-muted-foreground">kcal</div>
               </div>
             ))}
@@ -427,12 +418,12 @@ export default function Dashboard() {
       {/* ── 食事区分 ── */}
       <div
         className="rounded-xl px-5 py-5"
-        style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="section-label">食事区分</div>
           <Link href="/meals">
-            <button className="text-xs font-medium" style={{ color: "oklch(0.62 0.18 220)" }}>
+            <button className="text-xs font-medium" style={{ color: "oklch(0.58 0.19 254)" }}>
               記録する →
             </button>
           </Link>
@@ -445,12 +436,12 @@ export default function Dashboard() {
               <div
                 key={t}
                 className="rounded-lg px-3 py-3"
-                style={{ background: "oklch(0.24 0.04 240)" }}
+                style={{ background: "oklch(0.965 0.004 250)" }}
               >
                 <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                   {MEAL_TYPE_LABELS[t]}
                 </div>
-                <div className="text-lg font-bold text-white mt-1">
+                <div className="text-lg font-bold text-slate-900 mt-1">
                   {Math.round(kcal)}<span className="text-xs font-normal text-muted-foreground ml-1">kcal</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground">{list.length}件</div>
@@ -464,23 +455,23 @@ export default function Dashboard() {
       {weeklyQ.data && weeklyQ.data.daysWithMeals > 0 && (
         <div
           className="rounded-xl px-5 py-5"
-          style={{ background: "oklch(0.20 0.05 240)", border: "1px solid oklch(0.30 0.04 240)" }}
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
         >
           <div className="section-label mb-3">今週のふりかえり（直近7日）</div>
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.24 0.04 240)" }}>
+            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.965 0.004 250)" }}>
               <div className="text-[10px] font-medium text-muted-foreground">平均摂取</div>
-              <div className="text-base font-bold text-white mt-0.5">{weeklyQ.data.avgCalories}</div>
+              <div className="text-base font-bold text-slate-900 mt-0.5">{weeklyQ.data.avgCalories}</div>
               <div className="text-[10px] text-muted-foreground">kcal/日</div>
             </div>
-            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.24 0.04 240)" }}>
+            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.965 0.004 250)" }}>
               <div className="text-[10px] font-medium text-muted-foreground">目標達成</div>
-              <div className="text-base font-bold text-white mt-0.5">
+              <div className="text-base font-bold text-slate-900 mt-0.5">
                 {weeklyQ.data.target ? weeklyQ.data.goalMetDays : "—"}
               </div>
               <div className="text-[10px] text-muted-foreground">{weeklyQ.data.target ? "日" : "目標未設定"}</div>
             </div>
-            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.24 0.04 240)" }}>
+            <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: "oklch(0.965 0.004 250)" }}>
               <div className="text-[10px] font-medium text-muted-foreground">体重変化</div>
               <div
                 className="text-base font-bold mt-0.5"
@@ -507,11 +498,11 @@ export default function Dashboard() {
       <div>
         <div className="section-label mb-3">クイックアクセス</div>
         <div className="grid grid-cols-2 gap-2">
-          <QuickCard to="/meals"       icon={<Apple className="h-4 w-4" />}       title="食事を記録"   sub="写真からAI解析"                    accent="oklch(0.62 0.18 220)" />
+          <QuickCard to="/meals"       icon={<Apple className="h-4 w-4" />}       title="食事を記録"   sub="写真からAI解析"                    accent="oklch(0.58 0.19 254)" />
           <QuickCard to="/weight"      icon={<CalendarHeart className="h-4 w-4" />} title="体重を記録" sub={`最新 ${currentW ? currentW.toFixed(1) + " kg" : "未記録"}`} accent="oklch(0.72 0.18 155)" />
           <QuickCard to="/workouts"    icon={<Dumbbell className="h-4 w-4" />}    title="運動を記録"   sub={`今日 ${Math.round(burned)} kcal 消費`} accent="oklch(0.75 0.18 55)" />
-          <QuickCard to="/coach"       icon={<Sparkles className="h-4 w-4" />}    title="AIコーチ"     sub="週次メニュー提案"                  accent="oklch(0.68 0.14 290)" />
-          <QuickCard to="/convenience" icon={<ShoppingBag className="h-4 w-4" />} title="コンビニ提案" sub={`残 ${remainingBudget} kcal`} accent="oklch(0.62 0.18 220)" />
+          <QuickCard to="/coach"       icon={<Sparkles className="h-4 w-4" />}    title="AIパーソナルトレーナー" sub="週次メニュー提案"          accent="oklch(0.68 0.14 290)" />
+          <QuickCard to="/convenience" icon={<ShoppingBag className="h-4 w-4" />} title="コンビニ提案" sub={`残 ${remainingBudget} kcal`} accent="oklch(0.58 0.19 254)" />
           <QuickCard to="/photos"      icon={<Camera className="h-4 w-4" />}      title="体型写真"     sub={`${photosQ.data?.length ?? 0}枚 記録中`} accent="oklch(0.72 0.18 155)" />
         </div>
       </div>
@@ -524,7 +515,7 @@ function LegendRow({ color, label, value }: { color: string; label: string; valu
     <div className="flex items-center gap-2">
       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
       <span className="text-xs text-muted-foreground flex-1">{label}</span>
-      <span className="text-xs font-semibold text-white">{value}</span>
+      <span className="text-xs font-semibold text-slate-900">{value}</span>
     </div>
   );
 }

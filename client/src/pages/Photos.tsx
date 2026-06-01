@@ -15,13 +15,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const CARD = {
-  background: "oklch(0.20 0.05 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(1 0 0)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 const INNER = {
-  background: "oklch(0.24 0.04 240)",
-  border: "1px solid oklch(0.30 0.04 240)",
+  background: "oklch(0.965 0.004 250)",
+  border: "1px solid oklch(0.92 0.006 250)",
 } as const;
 
 export default function Photos() {
@@ -88,7 +88,7 @@ export default function Photos() {
       {/* Page Header */}
       <div className="pt-1">
         <div className="section-label mb-1">BODY PHOTOS</div>
-        <h1 className="text-2xl font-bold text-white">体型の記録</h1>
+        <h1 className="text-2xl font-bold text-slate-900">体型の記録</h1>
         <p className="text-xs text-muted-foreground mt-1">
           数字に出ない変化を、写真で見える化しましょう
         </p>
@@ -232,7 +232,7 @@ export default function Photos() {
               <div
                 key={p.id}
                 className="relative rounded-xl overflow-hidden"
-                style={{ border: "1px solid oklch(0.30 0.04 240)" }}
+                style={{ border: "1px solid oklch(0.92 0.006 250)" }}
               >
                 <img
                   src={p.imageUrl}
@@ -240,14 +240,14 @@ export default function Photos() {
                   className="w-full aspect-square object-cover"
                 />
                 <div
-                  className="px-2 py-1 text-[10px] text-white"
-                  style={{ background: "oklch(0.12 0.05 240 / 0.9)" }}
+                  className="px-2 py-1 text-[10px] text-slate-900"
+                  style={{ background: "oklch(0 0 0 / 0.45)" }}
                 >
                   {p.recordDate}
                   {p.weightKg ? ` / ${Number(p.weightKg).toFixed(1)}kg` : ""}
                 </div>
                 <button
-                  className="absolute top-1 right-1 rounded-full p-1 text-white hover:text-destructive transition-colors"
+                  className="absolute top-1 right-1 rounded-full p-1 text-slate-900 hover:text-destructive transition-colors"
                   style={{ background: "oklch(0.12 0.05 240 / 0.85)" }}
                   onClick={() => removeM.mutate({ id: p.id })}
                 >
@@ -272,11 +272,11 @@ function PhotoPane({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid oklch(0.30 0.04 240)" }}
+      style={{ border: "1px solid oklch(0.92 0.006 250)" }}
     >
       <div
         className="text-[10px] font-semibold text-muted-foreground px-2 py-1.5"
-        style={{ background: "oklch(0.24 0.04 240)" }}
+        style={{ background: "oklch(0.965 0.004 250)" }}
       >
         {title}
       </div>
@@ -288,8 +288,8 @@ function PhotoPane({
             className="w-full aspect-square object-cover"
           />
           <div
-            className="px-2 py-1 text-[10px] text-white"
-            style={{ background: "oklch(0.12 0.05 240 / 0.9)" }}
+            className="px-2 py-1 text-[10px] text-slate-900"
+            style={{ background: "oklch(0 0 0 / 0.45)" }}
           >
             {photo.recordDate}
             {photo.weightKg ? ` / ${Number(photo.weightKg).toFixed(1)}kg` : ""}
@@ -297,7 +297,7 @@ function PhotoPane({
         </>
       ) : (
         <div className="aspect-square flex items-center justify-center text-xs text-muted-foreground"
-          style={{ background: "oklch(0.18 0.04 240)" }}>
+          style={{ background: "oklch(1 0 0)" }}>
           選択してください
         </div>
       )}

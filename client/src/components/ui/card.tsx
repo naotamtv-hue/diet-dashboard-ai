@@ -10,9 +10,9 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
         className
       )}
       style={{
-        background: "oklch(0.20 0.05 240)",
-        border: "1px solid oklch(0.30 0.04 240)",
-        boxShadow: "0 2px 8px oklch(0 0 0 / 0.3)",
+        background: "oklch(1 0 0)",
+        border: "1px solid oklch(0.92 0.006 250)",
+        boxShadow: "0 2px 8px oklch(0 0 0 / 0.06)",
         ...(props as any).style,
       }}
       {...props}
