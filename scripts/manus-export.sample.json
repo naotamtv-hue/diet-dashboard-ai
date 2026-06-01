@@ -1,0 +1,44 @@
+{
+  "users": [
+    {
+      "email": "sample-a@example.com",
+      "name": "サンプル太郎",
+      "goal": {
+        "gender": "male",
+        "age": 32,
+        "heightCm": 172,
+        "currentWeightKg": 78.5,
+        "targetWeightKg": 70,
+        "targetWeeks": 12,
+        "activityLevel": "moderate",
+        "bmr": 1680,
+        "tdee": 2604,
+        "targetCalories": 2100,
+        "weeklyLossKg": 0.7
+      },
+      "meals": [
+        { "date": "2026-05-28", "type": "breakfast", "description": "オートミールとバナナ", "calories": 320, "proteinG": 12, "fatG": 6, "carbsG": 55 },
+        { "date": "2026-05-28", "type": "lunch", "description": "鶏むね肉と玄米", "calories": 540, "proteinG": 45, "fatG": 10, "carbsG": 60 },
+        { "date": "2026-05-28", "type": "dinner", "description": "サバの塩焼き定食", "calories": 620, "proteinG": 38, "fatG": 28, "carbsG": 55 }
+      ],
+      "weights": [
+        { "date": "2026-05-27", "weightKg": 78.8, "note": "" },
+        { "date": "2026-05-28", "weightKg": 78.5, "note": "朝測定" }
+      ],
+      "workouts": [
+        { "date": "2026-05-28", "activity": "ランニング", "durationMin": 30, "intensity": "medium", "caloriesBurned": 280, "note": "" }
+      ]
+    },
+    {
+      "email": "sample-b@example.com",
+      "name": "サンプル花子",
+      "meals": [
+        { "date": "2026-05-28", "type": "間食", "description": "プロテインバー", "calories": 180, "proteinG": 15, "fatG": 6, "carbsG": 18 }
+      ],
+      "weights": [
+        { "date": "2026-05-28", "weightKg": 55.2 }
+      ],
+      "workouts": []
+    }
+  ]
+}

@@ -118,6 +118,17 @@ export async function getUserByOpenId(openId: string) {
   return result[0] ?? null;
 }
 
+/** Manus移行ユーザーのclaim用: パスワードを後付けして名前も更新する。 */
+export async function setUserPassword(userId: number, passwordHash: string, name: string) {
+  const db = await requireDb();
+  const r = await db
+    .update(users)
+    .set({ passwordHash, name, loginMethod: "password", lastSignedIn: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+  return r[0] ?? null;
+}
+
 /* ============================== meals ============================== */
 
 export async function insertMeal(data: InsertMeal) {

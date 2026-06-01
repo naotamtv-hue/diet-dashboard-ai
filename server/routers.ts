@@ -103,6 +103,18 @@ export const appRouter = router({
         const openId = `local:${email}`;
         const existing = await db.getUserByOpenId(openId);
         if (existing) {
+          // Manus移行ユーザー(passwordHash未設定)は、同じメールでの登録を「claim」として扱い
+          // パスワードを後付けして既存データへログインさせる。
+          if (!existing.passwordHash) {
+            const claimed = await db.setUserPassword(
+              existing.id,
+              await hashPassword(input.password),
+              input.name?.trim() || existing.name || email.split("@")[0]
+            );
+            const user = claimed ?? existing;
+            await issueSession(ctx, user);
+            return publicUser(user);
+          }
           throw new TRPCError({
             code: "CONFLICT",
             message: "このメールアドレスは既に登録されています",
