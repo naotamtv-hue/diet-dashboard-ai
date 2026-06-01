@@ -1,0 +1,36 @@
+# Render Blueprint — diet-dashboard-ai
+# Render ダッシュボードで「New > Blueprint」からこのリポジトリを選ぶと自動構成される。
+# DATABASE_URL / DATABASE_AUTH_TOKEN / BUILT_IN_FORGE_API_KEY は秘密値なので
+# デプロイ時に各自ダッシュボードで入力する(sync:false)。JWT_SECRET は自動生成。
+services:
+  - type: web
+    name: diet-dashboard-ai
+    runtime: node
+    plan: free
+    branch: main
+    # ビルド: 依存導入 → クライアント+サーバービルド → DBマイグレーション(Tursoへ・冪等)
+    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm build && node scripts/db-setup.mjs
+    startCommand: corepack pnpm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22.12.0"
+      # Turso の DB URL (libsql://...) — ダッシュボードで入力
+      - key: DATABASE_URL
+        sync: false
+      # Turso の認証トークン — ダッシュボードで入力
+      - key: DATABASE_AUTH_TOKEN
+        sync: false
+      # セッションJWT署名鍵 — Renderが安全な値を自動生成
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BUILT_IN_FORGE_API_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      # Gemini APIキー — ダッシュボードで入力
+      - key: BUILT_IN_FORGE_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: gemini-2.5-flash
