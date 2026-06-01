@@ -40,6 +40,7 @@ const BOTTOM_NAV = [
 ];
 
 const MORE_NAV = [
+  { path: "/strength",    label: "筋トレ",    icon: Dumbbell },
   { path: "/coach",       label: "AIコーチ",  icon: Sparkles },
   { path: "/convenience", label: "コンビニ",  icon: ShoppingBag },
   { path: "/photos",      label: "体型写真",  icon: Camera },

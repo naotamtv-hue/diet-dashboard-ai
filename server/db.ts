@@ -544,6 +544,31 @@ export async function getVolumeByDate(userId: number, recordDate: string) {
   return volume;
 }
 
+/** トレーニングした日ごとの日別ボリューム(重量×回数)・セット数・部位を、新しい順に返す。 */
+export async function listVolumeHistory(userId: number, days = 30) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(workoutSets)
+    .where(eq(workoutSets.userId, userId))
+    .orderBy(desc(workoutSets.recordDate));
+  const map = new Map<string, { date: string; volume: number; sets: number; bodyParts: Set<string> }>();
+  for (const r of rows) {
+    let e = map.get(r.recordDate);
+    if (!e) {
+      e = { date: r.recordDate, volume: 0, sets: 0, bodyParts: new Set() };
+      map.set(r.recordDate, e);
+    }
+    e.volume += (Number(r.weightKg) || 0) * (Number(r.reps) || 0);
+    e.sets += 1;
+    e.bodyParts.add(r.bodyPart);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, days)
+    .map((e) => ({ date: e.date, volume: e.volume, sets: e.sets, bodyParts: Array.from(e.bodyParts) }));
+}
+
 /** 指定期間の食事を日別カロリー合計にして返す（週次ふりかえり用）。 */
 export async function listMealDailyTotals(userId: number, start: string, end: string) {
   const db = await requireDb();

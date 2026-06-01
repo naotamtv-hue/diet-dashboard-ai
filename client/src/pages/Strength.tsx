@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { todayDateString } from "@/lib/labels";
 import {
+  Calculator,
   ChevronLeft,
   Copy,
   Dumbbell,
@@ -53,6 +54,7 @@ export default function Strength() {
   const [today] = useState(todayDateString);
   const [bodyPart, setBodyPart] = useState<BodyPart>("chest");
   const [selected, setSelected] = useState<{ name: string; bodyPart: BodyPart } | null>(null);
+  const [tool, setTool] = useState<null | "rm">(null);
 
   const utils = trpc.useUtils();
   const exercisesQ = trpc.strength.exercises.useQuery();
@@ -94,11 +96,24 @@ export default function Strength() {
     );
   }
 
+  if (tool === "rm") {
+    return <RmCalculator onBack={() => setTool(null)} />;
+  }
+
   return (
     <div className="space-y-4 pb-4">
-      <div className="pt-1">
-        <div className="section-label mb-1">STRENGTH</div>
-        <h1 className="text-2xl font-bold text-white">筋トレ</h1>
+      <div className="flex items-end justify-between pt-1">
+        <div>
+          <div className="section-label mb-1">STRENGTH</div>
+          <h1 className="text-2xl font-bold text-white">筋トレ</h1>
+        </div>
+        <button
+          onClick={() => setTool("rm")}
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+          style={{ background: "oklch(0.62 0.18 220 / 0.18)", color: ACCENT, border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}
+        >
+          <Calculator className="h-3.5 w-3.5" /> RM計算機
+        </button>
       </div>
 
       {/* 今日のサマリー */}
@@ -166,6 +181,88 @@ export default function Strength() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 履歴（日別ボリューム） */}
+      <HistorySection onPick={(p) => setBodyPart(p)} />
+    </div>
+  );
+}
+
+/* ───────────────── 履歴：日別ボリューム集計＋ミニ棒グラフ ───────────────── */
+function HistorySection({ onPick }: { onPick: (p: BodyPart) => void }) {
+  const historyQ = trpc.strength.history.useQuery({ days: 30 });
+  const rows = historyQ.data ?? [];
+
+  if (historyQ.isLoading) {
+    return (
+      <div className="rounded-xl px-4 py-6 text-center text-xs text-muted-foreground" style={CARD}>
+        履歴を読み込み中...
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-xl px-4 py-6 text-center" style={CARD}>
+        <div className="section-label mb-1">HISTORY</div>
+        <p className="text-xs text-muted-foreground">まだ記録がありません。種目を選んでセットを保存すると、ここに履歴が出ます。</p>
+      </div>
+    );
+  }
+
+  // 直近14日のミニ棒グラフ（古い→新しいで左→右）
+  const recent = rows.slice(0, 14).slice().reverse();
+  const maxVol = Math.max(1, ...recent.map((r) => r.volume));
+  const md = (s: string) => s.slice(5).replace("-", "/");
+
+  return (
+    <div className="rounded-xl px-4 py-4 space-y-3" style={CARD}>
+      <div className="section-label">HISTORY · 日別ボリューム</div>
+
+      {/* ミニ棒グラフ */}
+      <div className="flex items-end gap-1 h-24">
+        {recent.map((r) => (
+          <div key={r.date} className="flex-1 flex flex-col items-center justify-end h-full">
+            <div
+              className="w-full max-w-[22px] rounded-t-sm"
+              style={{
+                height: `${Math.max(4, (r.volume / maxVol) * 100)}%`,
+                background: ACCENT,
+                opacity: 0.85,
+              }}
+              title={`${r.date}: ${r.volume.toLocaleString()}kg`}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between text-[9px] text-muted-foreground -mt-1">
+        <span>{md(recent[0].date)}</span>
+        <span>{md(recent[recent.length - 1].date)}</span>
+      </div>
+
+      {/* 日別リスト */}
+      <div className="space-y-2 pt-1">
+        {rows.map((r) => (
+          <div key={r.date} className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={INNER}>
+            <div className="text-sm font-bold text-white w-14 flex-shrink-0">{md(r.date)}</div>
+            <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+              {r.bodyParts.map((bp) => (
+                <button
+                  key={bp}
+                  onClick={() => onPick(bp as BodyPart)}
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: "oklch(0.62 0.18 220 / 0.18)", color: ACCENT }}
+                >
+                  {BODY_PART_LABELS[bp as BodyPart] ?? bp}
+                </button>
+              ))}
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-sm font-bold text-white tabular-nums">{(r.volume / 1000).toFixed(2)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">t</span></div>
+              <div className="text-[10px] text-muted-foreground">{r.sets}セット</div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -462,6 +559,99 @@ function RestTimer() {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ───────────────── RM計算機（重量×回数→推定1RM＋%換算） ───────────────── */
+const RM_PERCENTS: { pct: number; reps: string }[] = [
+  { pct: 100, reps: "1回" },
+  { pct: 95, reps: "2回" },
+  { pct: 90, reps: "4回" },
+  { pct: 85, reps: "6回" },
+  { pct: 80, reps: "8回" },
+  { pct: 75, reps: "10回" },
+  { pct: 70, reps: "12回" },
+  { pct: 65, reps: "15回" },
+  { pct: 60, reps: "20回" },
+];
+
+function RmCalculator({ onBack }: { onBack: () => void }) {
+  const [weight, setWeight] = useState("");
+  const [reps, setReps] = useState("");
+  const w = Number(weight);
+  const r = Number(reps);
+  const rm = estimate1RM(w, r);
+
+  return (
+    <div className="space-y-4 pb-4">
+      <div className="flex items-center gap-2 pt-1">
+        <button onClick={onBack} className="tap-target text-muted-foreground hover:text-white -ml-2">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="section-label">STRENGTH</div>
+          <h1 className="text-xl font-bold text-white">RM計算機</h1>
+        </div>
+      </div>
+
+      {/* 入力 */}
+      <div className="rounded-xl px-4 py-4 space-y-3" style={CARD}>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-[10px] text-muted-foreground">挙げた重量 (kg)</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="60"
+              className="h-12 mt-1 text-lg font-bold"
+            />
+          </div>
+          <div>
+            <Label className="text-[10px] text-muted-foreground">挙げた回数</Label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={reps}
+              onChange={(e) => setReps(e.target.value)}
+              placeholder="10"
+              className="h-12 mt-1 text-lg font-bold"
+            />
+          </div>
+        </div>
+
+        {/* 推定1RM */}
+        <div className="rounded-xl px-4 py-4 text-center" style={{ background: "oklch(0.62 0.18 220 / 0.15)", border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}>
+          <div className="text-[10px] font-medium text-muted-foreground">推定1RM（Epley式）</div>
+          <div className="text-4xl font-bold mt-1" style={{ color: ACCENT }}>
+            {rm || "-"}<span className="text-base font-normal text-muted-foreground ml-1">kg</span>
+          </div>
+        </div>
+      </div>
+
+      {/* %換算テーブル */}
+      <div className="rounded-xl px-4 py-4 space-y-1.5" style={CARD}>
+        <div className="section-label mb-2">目標重量の目安（%RM）</div>
+        {rm ? (
+          RM_PERCENTS.map((p) => (
+            <div key={p.pct} className="flex items-center gap-3 rounded-lg px-3 py-2" style={INNER}>
+              <span className="text-xs font-bold w-9 flex-shrink-0" style={{ color: ACCENT }}>{p.pct}%</span>
+              <span className="text-lg font-bold text-white tabular-nums flex-1">
+                {Math.round((rm * p.pct) / 100)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">kg</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">目安 {p.reps}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-muted-foreground py-2">重量と回数を入力すると、各強度の目標重量が出ます。</p>
+        )}
+      </div>
+
+      <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">
+        ※ 推定値です（Epley式: 1RM = 重量 × (1 + 回数/30)）。実際に高重量を扱う際は補助を付けて安全に行ってください。
+      </p>
     </div>
   );
 }

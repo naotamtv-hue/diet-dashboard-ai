@@ -466,6 +466,9 @@ export const appRouter = router({
     dayVolume: protectedProcedure
       .input(z.object({ date: dateStringSchema }))
       .query(({ ctx, input }) => db.getVolumeByDate(ctx.user.id, input.date)),
+    history: protectedProcedure
+      .input(z.object({ days: z.number().int().min(1).max(120).optional() }).optional())
+      .query(({ ctx, input }) => db.listVolumeHistory(ctx.user.id, input?.days ?? 30)),
   }),
 
   /* ============================== goals ============================== */

@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { workoutMotivation } from "@/lib/motivation";
 import { Dumbbell, Flame, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import { toast } from "sonner";
 
 const CARD = {
@@ -117,6 +118,21 @@ export default function Workouts() {
         <div className="section-label mb-1">WORKOUTS</div>
         <h1 className="text-2xl font-bold text-white">トレーニング</h1>
       </div>
+
+      {/* 筋トレ（種目別）への導線 */}
+      <Link href="/strength">
+        <button
+          className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5"
+          style={{ background: "oklch(0.62 0.18 220 / 0.15)", border: "1px solid oklch(0.62 0.18 220 / 0.3)" }}
+        >
+          <Dumbbell className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.62 0.18 220)" }} />
+          <div className="flex-1 min-w-0 text-left">
+            <div className="text-sm font-bold text-white">筋トレを種目別に記録</div>
+            <div className="text-[11px] text-muted-foreground">部位・種目ごとにセット／重量／回数・RM・タイマー</div>
+          </div>
+          <span className="text-lg" style={{ color: "oklch(0.62 0.18 220)" }}>›</span>
+        </button>
+      </Link>
 
       {/* 入力フォーム */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
