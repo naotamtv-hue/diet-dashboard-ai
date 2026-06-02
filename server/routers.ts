@@ -586,6 +586,24 @@ export const appRouter = router({
       )
       .mutation(({ ctx, input }) => db.addCustomFood({ userId: ctx.user.id, ...input })),
 
+    updateCustom: protectedProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          name: z.string().min(1).max(80),
+          servingLabel: z.string().min(1).max(40).default("1食"),
+          calories: z.number().min(0).max(9000),
+          proteinG: z.number().min(0).max(2000),
+          fatG: z.number().min(0).max(2000),
+          carbsG: z.number().min(0).max(2000),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await db.updateCustomFood(ctx.user.id, id, data);
+        return { ok: true };
+      }),
+
     deleteCustom: protectedProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {

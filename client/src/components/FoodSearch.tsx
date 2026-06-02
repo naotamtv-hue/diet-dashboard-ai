@@ -41,6 +41,7 @@ export default function FoodSearch({
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<Food | null>(null);
   const [creating, setCreating] = useState(false);
+  const [editFood, setEditFood] = useState<{ id: number; name: string; servingLabel: string; calories: number; proteinG: number; fatG: number; carbsG: number } | null>(null);
   const [building, setBuilding] = useState<{ id?: number; name: string; items: Food[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const packageRef = useRef<HTMLInputElement>(null);
@@ -65,6 +66,8 @@ export default function FoodSearch({
   const createM = trpc.foods.createCustom.useMutation({
     onSuccess: () => utils.foods.myFoods.invalidate(),
   });
+  const updateCustomM = trpc.foods.updateCustom.useMutation({ onSuccess: () => utils.foods.myFoods.invalidate() });
+  const deleteCustomM = trpc.foods.deleteCustom.useMutation({ onSuccess: () => utils.foods.myFoods.invalidate() });
   const saveMealM = trpc.foods.saveMeal.useMutation({ onSuccess: () => utils.foods.myMeals.invalidate() });
   const updateMealM = trpc.foods.updateMeal.useMutation({ onSuccess: () => utils.foods.myMeals.invalidate() });
   const deleteMealM = trpc.foods.deleteMeal.useMutation({ onSuccess: () => utils.foods.myMeals.invalidate() });
@@ -215,6 +218,27 @@ export default function FoodSearch({
             carbsG: Number(created.carbsG),
           });
           toast.success(`「${created.name}」を作成しました`);
+        }}
+      />
+    );
+  }
+
+  if (editFood && !pickMode) {
+    return (
+      <CreateFoodForm
+        initialName=""
+        initial={editFood}
+        saving={updateCustomM.isPending || deleteCustomM.isPending}
+        onBack={() => setEditFood(null)}
+        onCreate={async (vals) => {
+          await updateCustomM.mutateAsync({ id: editFood.id, ...vals });
+          setEditFood(null);
+          toast.success("食品を更新しました");
+        }}
+        onDelete={async () => {
+          await deleteCustomM.mutateAsync({ id: editFood.id });
+          setEditFood(null);
+          toast.success("削除しました");
         }}
       />
     );
@@ -473,6 +497,53 @@ export default function FoodSearch({
                 </div>
               </div>
             )}
+
+            {/* 自分の食品（登録済み）— 検索していない時。編集・削除可 */}
+            {!query.trim() && (myFoodsQ.data?.length ?? 0) > 0 && (
+              <div className="mb-3">
+                <div className="text-xs font-bold text-foreground mb-2 mt-1">自分の食品</div>
+                <div className="space-y-2">
+                  {myFoodsQ.data!.map((cf) => (
+                    <div key={cf.id} className="w-full flex items-center gap-2 rounded-xl px-4 py-3 bg-card border border-border">
+                      <button
+                        onClick={() =>
+                          setDetail({
+                            name: cf.name,
+                            calories: Number(cf.calories),
+                            proteinG: Number(cf.proteinG),
+                            fatG: Number(cf.fatG),
+                            carbsG: Number(cf.carbsG),
+                          })
+                        }
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <div className="text-sm font-semibold text-foreground truncate">{cf.name}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {Math.round(Number(cf.calories))}kcal · P{Math.round(Number(cf.proteinG))} / F{Math.round(Number(cf.fatG))} / C{Math.round(Number(cf.carbsG))} ・ {cf.servingLabel}
+                        </div>
+                      </button>
+                      <button
+                        onClick={() =>
+                          setEditFood({
+                            id: cf.id,
+                            name: cf.name,
+                            servingLabel: cf.servingLabel,
+                            calories: Math.round(Number(cf.calories)),
+                            proteinG: Math.round(Number(cf.proteinG)),
+                            fatG: Math.round(Number(cf.fatG)),
+                            carbsG: Math.round(Number(cf.carbsG)),
+                          })
+                        }
+                        className="tap-target text-muted-foreground flex-shrink-0"
+                        aria-label="編集"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -542,8 +613,11 @@ function FoodDetail({
   const gramMode = !!food.per100;
   const [mult, setMult] = useState(1);
   const [grams, setGrams] = useState(food.defaultGrams ?? 100);
+  // PFC手動修正: override が入っている間は分量計算より優先する。
+  const [override, setOverride] = useState<{ calories: number; proteinG: number; fatG: number; carbsG: number } | null>(null);
+  const [editingNut, setEditingNut] = useState(false);
 
-  const scaled: Food = gramMode
+  const portionScaled: Food = gramMode
     ? {
         name: food.name,
         calories: food.per100!.kcal * (grams / 100),
@@ -558,8 +632,20 @@ function FoodDetail({
         fatG: food.fatG * mult,
         carbsG: food.carbsG * mult,
       };
-  const setM = (v: number) => setMult(Math.max(0.25, Math.round(v * 4) / 4));
-  const setG = (v: number) => setGrams(Math.max(5, Math.min(2000, Math.round(v / 5) * 5)));
+  const scaled: Food = override ? { name: food.name, ...override } : portionScaled;
+  const setM = (v: number) => { setOverride(null); setMult(Math.max(0.25, Math.round(v * 4) / 4)); };
+  const setG = (v: number) => { setOverride(null); setGrams(Math.max(5, Math.min(2000, Math.round(v / 5) * 5))); };
+  const startEditNut = () => {
+    setOverride({
+      calories: Math.round(portionScaled.calories),
+      proteinG: Math.round(portionScaled.proteinG),
+      fatG: Math.round(portionScaled.fatG),
+      carbsG: Math.round(portionScaled.carbsG),
+    });
+    setEditingNut(true);
+  };
+  const setNut = (k: "calories" | "proteinG" | "fatG" | "carbsG", v: number) =>
+    setOverride((o) => ({ ...(o ?? { calories: 0, proteinG: 0, fatG: 0, carbsG: 0 }), [k]: Math.max(0, v) }));
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
@@ -655,22 +741,70 @@ function FoodDetail({
           </div>
         )}
 
-        {/* カロリー＆PFC */}
-        <div className="rounded-xl px-4 py-5 bg-card border border-border text-center">
-          <div className="text-4xl font-bold text-foreground">{Math.round(scaled.calories)}</div>
-          <div className="text-xs text-muted-foreground mb-4">kcal</div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { l: "タンパク質", v: scaled.proteinG, c: BLUE },
-              { l: "脂質", v: scaled.fatG, c: "oklch(0.75 0.15 55)" },
-              { l: "炭水化物", v: scaled.carbsG, c: "oklch(0.62 0.16 155)" },
-            ].map((x) => (
-              <div key={x.l}>
-                <div className="text-lg font-bold" style={{ color: x.c }}>{Math.round(x.v)}g</div>
-                <div className="text-[10px] text-muted-foreground">{x.l}</div>
+        {/* カロリー＆PFC（栄養を編集可能） */}
+        <div className="rounded-xl px-4 py-5 bg-card border border-border text-center relative">
+          <button
+            onClick={() => (editingNut ? setEditingNut(false) : startEditNut())}
+            className="absolute top-3 right-3 text-[11px] font-semibold flex items-center gap-1"
+            style={{ color: BLUE }}
+          >
+            <Pencil className="h-3.5 w-3.5" /> {editingNut ? "完了" : "栄養を修正"}
+          </button>
+          {editingNut ? (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-end justify-center gap-1">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={override?.calories ?? 0}
+                  onChange={(e) => setNut("calories", Number(e.target.value) || 0)}
+                  className="text-4xl font-bold text-foreground text-center bg-transparent outline-none w-28 border-b"
+                  style={{ borderColor: "oklch(0.9 0.02 254)" }}
+                />
+                <span className="text-xs text-muted-foreground pb-1">kcal</span>
               </div>
-            ))}
-          </div>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { l: "タンパク質", k: "proteinG", c: BLUE },
+                  { l: "脂質", k: "fatG", c: "oklch(0.75 0.15 55)" },
+                  { l: "炭水化物", k: "carbsG", c: "oklch(0.62 0.16 155)" },
+                ] as const).map((x) => (
+                  <div key={x.l}>
+                    <div className="flex items-end justify-center gap-0.5">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={override?.[x.k] ?? 0}
+                        onChange={(e) => setNut(x.k, Number(e.target.value) || 0)}
+                        className="text-lg font-bold text-center bg-transparent outline-none w-12 border-b"
+                        style={{ color: x.c, borderColor: "oklch(0.9 0.02 254)" }}
+                      />
+                      <span className="text-xs text-muted-foreground">g</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">{x.l}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[10px] text-muted-foreground">数値を直接修正できます（分量を変えると元の計算に戻ります）</div>
+            </div>
+          ) : (
+            <>
+              <div className="text-4xl font-bold text-foreground">{Math.round(scaled.calories)}</div>
+              <div className="text-xs text-muted-foreground mb-4">kcal{override ? "（修正済み）" : ""}</div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { l: "タンパク質", v: scaled.proteinG, c: BLUE },
+                  { l: "脂質", v: scaled.fatG, c: "oklch(0.75 0.15 55)" },
+                  { l: "炭水化物", v: scaled.carbsG, c: "oklch(0.62 0.16 155)" },
+                ].map((x) => (
+                  <div key={x.l}>
+                    <div className="text-lg font-bold" style={{ color: x.c }}>{Math.round(x.v)}g</div>
+                    <div className="text-[10px] text-muted-foreground">{x.l}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <Button onClick={() => onSave(scaled)} disabled={saving} className="w-full h-12 font-bold rounded-xl" style={{ background: BLUE }}>
@@ -681,14 +815,17 @@ function FoodDetail({
   );
 }
 
-/* ── 自分で食品を作成（My Foods） ── */
+/* ── 自分で食品を作成／編集（My Foods） ── */
 function CreateFoodForm({
   initialName,
+  initial,
   saving,
   onBack,
   onCreate,
+  onDelete,
 }: {
   initialName: string;
+  initial?: { name: string; servingLabel: string; calories: number; proteinG: number; fatG: number; carbsG: number };
   saving: boolean;
   onBack: () => void;
   onCreate: (vals: {
@@ -699,13 +836,15 @@ function CreateFoodForm({
     fatG: number;
     carbsG: number;
   }) => void;
+  onDelete?: () => void;
 }) {
-  const [name, setName] = useState(initialName);
-  const [serving, setServing] = useState("1食");
-  const [kcal, setKcal] = useState("");
-  const [p, setP] = useState("");
-  const [f, setF] = useState("");
-  const [c, setC] = useState("");
+  const isEdit = !!initial;
+  const [name, setName] = useState(initial?.name ?? initialName);
+  const [serving, setServing] = useState(initial?.servingLabel ?? "1食");
+  const [kcal, setKcal] = useState(initial ? String(initial.calories) : "");
+  const [p, setP] = useState(initial ? String(initial.proteinG) : "");
+  const [f, setF] = useState(initial ? String(initial.fatG) : "");
+  const [c, setC] = useState(initial ? String(initial.carbsG) : "");
 
   const canSave = name.trim().length > 0 && Number(kcal) >= 0 && kcal !== "";
 
@@ -715,7 +854,7 @@ function CreateFoodForm({
         <button onClick={onBack} className="tap-target -ml-1 text-muted-foreground">
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <div className="flex-1 text-center font-bold text-base text-foreground">食品を作成</div>
+        <div className="flex-1 text-center font-bold text-base text-foreground">{isEdit ? "食品を編集" : "食品を作成"}</div>
         <button
           onClick={() =>
             onCreate({
@@ -774,8 +913,13 @@ function CreateFoodForm({
           className="w-full h-12 font-bold rounded-xl"
           style={{ background: BLUE }}
         >
-          {saving ? "保存中..." : "保存して記録へ"}
+          {saving ? "保存中..." : isEdit ? "保存する" : "保存して記録へ"}
         </Button>
+        {isEdit && onDelete && (
+          <button onClick={onDelete} disabled={saving} className="w-full text-center text-sm text-destructive py-2">
+            この食品を削除
+          </button>
+        )}
       </div>
     </div>
   );

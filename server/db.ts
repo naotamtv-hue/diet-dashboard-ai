@@ -757,6 +757,25 @@ export async function listCustomFoods(userId: number, keyword?: string, limit = 
     .limit(limit);
 }
 
+export async function updateCustomFood(
+  userId: number,
+  id: number,
+  data: { name: string; servingLabel: string; calories: number; proteinG: number; fatG: number; carbsG: number }
+) {
+  const db = await requireDb();
+  await db
+    .update(customFoods)
+    .set({
+      name: data.name,
+      servingLabel: data.servingLabel,
+      calories: String(data.calories),
+      proteinG: String(data.proteinG),
+      fatG: String(data.fatG),
+      carbsG: String(data.carbsG),
+    })
+    .where(and(eq(customFoods.id, id), eq(customFoods.userId, userId)));
+}
+
 export async function deleteCustomFood(userId: number, id: number) {
   const db = await requireDb();
   await db.delete(customFoods).where(and(eq(customFoods.id, id), eq(customFoods.userId, userId)));
