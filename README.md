@@ -1,6 +1,16 @@
-# Web App Template (tRPC + Manus Auth + Database)
+# Diet Atelier — AI減量ダッシュボード（MyFitnessPal風）
 
-This template gives you a React 19 + Tailwind 4 + Express 4 + tRPC 11 stack with Manus OAuth already wired. Procedures are your contracts, types flow end to end, and authentication "just works".
+React 19 + Vite + tRPC 11 + Drizzle(SQLite/libsql) + Tailwind v4。食事日記・基本食材グラム記録・My Foods/My Meals・コンビニ/AI推定・体重/運動/筋トレ・AI食事トレーナー・PWA。
+
+## ☁️ クラウドに1タップでデプロイ（24時間稼働）
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/naotamtv-hue/diet-dashboard-ai)
+
+1. 上のボタン → GitHubでRenderにログイン → リポジトリ承認 → Blueprintが `render.yaml` を読んで自動構成。
+2. 無料DB **Turso** を用意し、`DATABASE_URL`(`libsql://...`) と `DATABASE_AUTH_TOKEN` を入力（手順は `DEPLOY.md`）。
+3. `BUILT_IN_FORGE_API_KEY` に Gemini APIキーを入力 → Apply。`JWT_SECRET` は自動生成、ビルド時にDB(マイグレーション)も自動作成。
+
+> 詳細・Turso作成コマンドは [`DEPLOY.md`](./DEPLOY.md)。
 
 ---
 
