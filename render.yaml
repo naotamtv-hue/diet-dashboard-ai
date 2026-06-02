@@ -8,9 +8,9 @@ services:
     runtime: node
     plan: free
     branch: main
-    # ビルド: 依存導入 → クライアント+サーバービルド → DBマイグレーション(Tursoへ・冪等)
-    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm build && node scripts/db-setup.mjs
-    startCommand: corepack pnpm start
+    # ビルド: pnpm導入(corepackの署名バグ回避でnpm直入れ) → 依存 → ビルド → DBマイグレーション(冪等)
+    buildCommand: npm install -g pnpm@10.4.1 && pnpm install --frozen-lockfile && pnpm build && node scripts/db-setup.mjs
+    startCommand: node dist/index.js
     healthCheckPath: /
     autoDeploy: true
     envVars:
