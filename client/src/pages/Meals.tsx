@@ -205,6 +205,8 @@ export default function Meals() {
   const utils = trpc.useUtils();
   const listQ = trpc.meals.listByDate.useQuery({ date });
   const summaryQ = trpc.meals.summary.useQuery({ date });
+  const goalQ = trpc.goals.get.useQuery();
+  const workoutsQ = trpc.workouts.listByDate.useQuery({ date });
   const frequentQ = trpc.meals.frequentItems.useQuery();
   const copyM = trpc.meals.copyFromDate.useMutation({
     onSuccess: (res) => {
@@ -405,23 +407,40 @@ export default function Meals() {
         </button>
       </div>
 
-      {/* 選択日の合計 */}
-      <div className="rounded-xl px-4 py-4" style={CARD}>
-        <div className="section-label mb-3">選択日の合計</div>
-        <div className="flex items-end gap-4">
-          <div>
-            <div className="text-3xl font-bold text-slate-900 leading-none">
-              {Math.round(summaryQ.data?.calories ?? 0)}
+      {/* 残りカロリー（MyFitnessPal式: 目標 − 食事 ＋ 運動 ＝ 残り） */}
+      {(() => {
+        const goalCal = Math.round(Number(goalQ.data?.targetCalories ?? 0));
+        const food = Math.round(summaryQ.data?.calories ?? 0);
+        const exercise = Math.round(
+          (workoutsQ.data ?? []).reduce((a, w) => a + Number(w.caloriesBurned ?? 0), 0)
+        );
+        const remaining = goalCal - food + exercise;
+        return (
+          <div className="rounded-xl px-4 py-4" style={CARD}>
+            {goalCal > 0 ? (
+              <div className="flex items-center justify-around text-center mb-3">
+                <FormulaItem value={goalCal} label="目標" />
+                <span className="text-muted-foreground text-base">−</span>
+                <FormulaItem value={food} label="食事" />
+                <span className="text-muted-foreground text-base">＋</span>
+                <FormulaItem value={exercise} label="運動" />
+                <span className="text-muted-foreground text-base">＝</span>
+                <FormulaItem value={remaining} label="残り" highlight />
+              </div>
+            ) : (
+              <div className="flex items-end gap-2 mb-3">
+                <div className="text-3xl font-bold text-slate-900 leading-none">{food}</div>
+                <div className="text-xs text-muted-foreground pb-0.5">kcal 摂取</div>
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-3 text-xs pt-3" style={{ borderTop: "1px solid oklch(0.94 0.005 250)" }}>
+              <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.58 0.19 254)" />
+              <MacroStat label="脂質" value={Math.round(summaryQ.data?.fatG ?? 0)} color="oklch(0.75 0.18 55)" />
+              <MacroStat label="炭水化物" value={Math.round(summaryQ.data?.carbsG ?? 0)} color="oklch(0.72 0.18 155)" />
             </div>
-            <div className="text-xs text-muted-foreground mt-1">kcal</div>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-xs flex-1 pb-0.5">
-            <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.58 0.19 254)" />
-            <MacroStat label="脂質" value={Math.round(summaryQ.data?.fatG ?? 0)} color="oklch(0.75 0.18 55)" />
-            <MacroStat label="炭水化物" value={Math.round(summaryQ.data?.carbsG ?? 0)} color="oklch(0.72 0.18 155)" />
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* 区分別リスト */}
       {MEAL_TYPES.map((t) => {
@@ -630,6 +649,20 @@ function NumField({ label, value, onChange }: { label: string; value: string; on
     <div className="space-y-2">
       <Label className="section-label">{label}</Label>
       <Input inputMode="decimal" type="number" value={value} onChange={(e) => onChange(e.target.value)} className="h-11" />
+    </div>
+  );
+}
+
+function FormulaItem({ value, label, highlight }: { value: number; label: string; highlight?: boolean }) {
+  return (
+    <div className="flex flex-col items-center min-w-0">
+      <div
+        className="text-lg font-bold leading-none tabular-nums"
+        style={{ color: highlight ? (value < 0 ? "oklch(0.62 0.2 25)" : "oklch(0.58 0.19 254)") : "oklch(0.2 0.02 250)" }}
+      >
+        {value}
+      </div>
+      <div className="text-[10px] text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
