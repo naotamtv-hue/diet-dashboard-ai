@@ -618,6 +618,18 @@ export const appRouter = router({
         if (!goal) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "先に目標を設定してください" });
         }
+        // 実在のコンビニ商品を候補として渡し、conveniencePlanのハルシネーションを防ぐ。
+        // 低脂質・高タンパク優先で並べ、上限80件まで。
+        const items = await db.searchConvenienceItems({ limit: 200 });
+        const convenienceCandidates = items
+          .map((c) => ({
+            name: c.name,
+            kcal: Number(c.calories),
+            proteinG: Number(c.proteinG),
+            fatG: Number(c.fatG),
+          }))
+          .sort((a, b) => b.proteinG / Math.max(b.kcal, 1) - a.proteinG / Math.max(a.kcal, 1))
+          .slice(0, 80);
         return buildMealPlan({
           gender: goal.gender,
           age: goal.age,
@@ -630,6 +642,7 @@ export const appRouter = router({
           targetCalories: Number(goal.targetCalories),
           activityLevel: goal.activityLevel,
           preference: input.preference,
+          convenienceCandidates,
         });
       }),
   }),

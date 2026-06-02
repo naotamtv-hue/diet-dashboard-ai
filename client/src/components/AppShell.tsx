@@ -26,6 +26,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import ThunderIcon from "./ThunderIcon";
 import { trpc } from "@/lib/trpc";
 import { todayDateString } from "@/lib/labels";
 import { useReminderScheduler } from "@/hooks/useReminderScheduler";
@@ -152,7 +153,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               style={{ background: "oklch(0.96 0.03 55)", border: "1px solid oklch(0.88 0.06 55)" }}
               title={`${streakQ.data.streak}日連続で記録中`}
             >
-              <span className="text-sm leading-none">🔥</span>
+              <ThunderIcon className="h-4 w-4" />
               <span className="text-xs font-bold" style={{ color: "oklch(0.58 0.16 45)" }}>{streakQ.data.streak}</span>
             </div>
           )}

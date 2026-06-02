@@ -3,6 +3,7 @@
  * 食べ物/商品名からの栄養推定・コンビニ商品の組み合わせ提案。
  */
 import { ENV } from "./_core/env";
+import { TRAINER_NUTRITION_KNOWLEDGE, TRAINER_KNOWLEDGE_BRIEF } from "./trainer-knowledge";
 
 // OpenAI互換のベースURL。Geminiの場合は .../v1beta/openai を指す。
 const FORGE_URL = (ENV.forgeApiUrl || "https://generativelanguage.googleapis.com/v1beta/openai").replace(
@@ -502,21 +503,37 @@ export async function buildMealPlan(context: {
   targetCalories: number;
   activityLevel: string;
   preference?: string;
+  /** 実在のコンビニ商品候補（ハルシネーション防止のためconveniencePlanはこの中から選ばせる）。 */
+  convenienceCandidates?: { name: string; kcal: number; proteinG: number; fatG: number }[];
 }): Promise<MealPlanResult> {
-  const system = `あなたは日本人向けのAI食事管理トレーナーです。ユーザーの目標と体組成に合わせ、1日の食事プランを提案してください。
-- goalAssessment: 目標の現実性を評価。健康的な減量は週あたり体重の0.5〜1%(おおむね-0.5〜-1.0kg/週)まで。これを大きく超える無理な目標(例:1ヶ月-10kg)はリバウンド・筋肉減少・体調不良のリスクがあると明確に警告し、現実的な期間/ペースを提案する。問題なければ前向きに励ます。日本語2〜3文。
-- isAggressive: 週減量ペースが過激(健康的範囲を超える)なら true。
-- dailyTarget: 1日の目標 calories(kcal,整数)/proteinG/fatG/carbsG(g,整数)。タンパク質は減量中なので体重×1.6〜2.2g目安。
-- homeCookingPlan: 自炊中心の献立。朝食/昼食/夕食(必要なら間食)。各mealに items[{name(料理・食材名), grams(g,整数), kcal(整数)}] と totalKcal。一般的で作りやすい和洋メニュー、グラム数を必ず明記。
-- conveniencePlan: コンビニ(セブン/ファミマ/ローソン)で同じ目標kcalを満たす献立。各mealに items[{name(実在しそうな商品名), kcal}] と totalKcal。低脂質・高タンパクを優先。
-- tips: 続けるコツを2〜3個(短文)。
+  const system = `あなたは日本人向けのプロのAI食事管理トレーナーです。下記のナレッジに厳密に従い、ユーザーの目標と体組成に合わせて1日の食事プランを提案してください。
+
+${TRAINER_NUTRITION_KNOWLEDGE}
+
+# 出力する各フィールドの作り方
+- goalAssessment: 上記「1.減量ペース」に照らして目標の現実性を評価。健康的範囲(体重の0.5〜1%/週)を大きく超える無理な目標は、筋肉減少・代謝低下・リバウンドのリスクを具体的に挙げて警告し、現実的な期間/ペースを提案する。問題なければ前向きに励ます。日本語2〜3文。
+- isAggressive: 週減量ペースが健康的範囲(体重の1%/週)を超えるなら true。
+- dailyTarget: 1日の目標 calories(kcal,整数)/proteinG/fatG/carbsG(g,整数)。「2.タンパク質(体重×1.6〜2.2g)」「3.脂質(総kcalの20〜25%かつ体重×0.5〜0.8g下限)」「5.PFC比率」を満たすよう設計し、合計がcaloriesと整合させる。
+- homeCookingPlan: 自炊中心の献立。朝食/昼食/夕食(必要なら間食)。各mealに items[{name(料理・食材名), grams(g,整数), kcal(整数)}] と totalKcal。一般的で作りやすい和洋メニュー、グラム数を必ず明記。毎食タンパク質源を入れ、野菜・未精製の主食を活用する。
+- conveniencePlan: コンビニで同じ目標kcalを満たす献立。提供される【コンビニ商品候補】の中から実在する商品のみを選び、各mealに items[{name(候補の正式名), kcal(候補の値)}] と totalKcal。低脂質・高タンパクを優先。候補に良いものが無いカテゴリは無理に埋めない。
+- tips: 上記ナレッジ(満腹感・継続・停滞期など)に基づく続けるコツを2〜3個(短文)。
 出力はJSONのみ。`;
+
+  const { convenienceCandidates, ...profile } = context;
+  const candidateText =
+    convenienceCandidates && convenienceCandidates.length
+      ? `\n\n【コンビニ商品候補】(conveniencePlanはこの中の実在商品のみから選ぶ。各値は1商品あたり)\n` +
+        convenienceCandidates
+          .map((c) => `- ${c.name} / ${Math.round(c.kcal)}kcal P${Math.round(c.proteinG)} F${Math.round(c.fatG)}`)
+          .join("\n")
+      : "";
+  const userContent = JSON.stringify(profile) + candidateText;
 
   const payload = {
     model: AI_MODEL,
     messages: [
       { role: "system", content: system },
-      { role: "user", content: JSON.stringify(context) },
+      { role: "user", content: userContent },
     ],
     max_tokens: 4000,
     response_format: {
@@ -612,7 +629,8 @@ export async function buildDailyAdvice(context: {
   recentWeightTrendKgPerWeek: number | null;
   streakDays: number;
 }): Promise<string> {
-  const system = `あなたは日本人向けの優しく前向きな減量コーチです。
+  const system = `あなたは日本人向けの優しく前向きな減量コーチです。次の食事管理ナレッジを踏まえてください。
+${TRAINER_KNOWLEDGE_BRIEF}
 渡されたユーザーの今日の数値を見て、励ましつつ具体的な行動を1つ提案する短いアドバイスを返してください。
 - 日本語で1〜2文、80文字以内
 - 数字を踏まえて具体的に（例:「タンパク質があと30g。鶏むねやプロテインで補うと◎」）

@@ -3,9 +3,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, ChefHat, Loader2, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+
+const PLAN_STORAGE_KEY = "trainer:lastMealPlan";
 
 const BLUE = "oklch(0.58 0.19 254)";
 const GREEN = "oklch(0.62 0.16 155)";
@@ -23,7 +25,23 @@ export default function Trainer() {
   const goalQ = trpc.goals.get.useQuery();
   const [preference, setPreference] = useState("");
   const [tab, setTab] = useState<"home" | "conv">("home");
-  const [plan, setPlan] = useState<Plan | null>(null);
+  // 直近に作成したプランは端末に保存し、再訪問時に復元する（毎回AIを叩かない＝クォータ節約）。
+  const [plan, setPlan] = useState<Plan | null>(() => {
+    try {
+      const raw = localStorage.getItem(PLAN_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as Plan) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (plan) localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(plan));
+    } catch {
+      /* ignore quota/serialization errors */
+    }
+  }, [plan]);
 
   const planM = trpc.trainer.mealPlan.useMutation({
     onSuccess: (res) => setPlan(res as Plan),
