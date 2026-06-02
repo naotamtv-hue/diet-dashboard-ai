@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl } from "@/lib/labels";
-import { Camera, ChevronLeft, Plus, PlusCircle, Search, Sparkles, Star, Loader2, Minus, UtensilsCrossed } from "lucide-react";
+import { Camera, ChevronLeft, Plus, PlusCircle, ScanLine, Search, Sparkles, Star, Loader2, Minus, UtensilsCrossed } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -36,7 +36,9 @@ export default function FoodSearch({
   const [detail, setDetail] = useState<Food | null>(null);
   const [creating, setCreating] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const packageRef = useRef<HTMLInputElement>(null);
   const analyzeM = trpc.meals.analyzePhoto.useMutation();
+  const packageM = trpc.meals.analyzePackage.useMutation();
 
   const myFoodsQ = trpc.foods.myFoods.useQuery(
     { keyword: query.trim() || undefined },
@@ -123,6 +125,21 @@ export default function FoodSearch({
       setDetail({ name: a.description, calories: a.calories, proteinG: a.proteinG, fatG: a.fatG, carbsG: a.carbsG });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "解析に失敗しました");
+    }
+  };
+
+  const analyzePackage = async (file: File) => {
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const res = await packageM.mutateAsync({ imageDataUrl: dataUrl });
+      const a = res.analysis as { description: string; calories: number; proteinG: number; fatG: number; carbsG: number };
+      if (!a.calories) {
+        toast.error(a.description || "成分表示を読み取れませんでした");
+        return;
+      }
+      setDetail({ name: a.description, calories: a.calories, proteinG: a.proteinG, fatG: a.fatG, carbsG: a.carbsG });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "読み取りに失敗しました");
     }
   };
 
@@ -295,6 +312,37 @@ export default function FoodSearch({
             </div>
           </button>
         )}
+
+        {/* パッケージ/栄養成分表示から登録 */}
+        <input
+          ref={packageRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) analyzePackage(f);
+            e.target.value = "";
+          }}
+        />
+        <button
+          onClick={() => packageRef.current?.click()}
+          disabled={packageM.isPending}
+          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border"
+          style={{ borderColor: "oklch(0.72 0.18 155)" }}
+        >
+          {packageM.isPending ? (
+            <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
+          ) : (
+            <ScanLine className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
+          )}
+          <div className="flex-1 text-left">
+            <div className="text-sm font-semibold" style={{ color: "oklch(0.5 0.14 155)" }}>
+              {packageM.isPending ? "成分表示を読み取り中..." : "パッケージの栄養成分表示から登録"}
+            </div>
+            <div className="text-[11px] text-muted-foreground">商品の成分表示を撮影 → 自動で栄養を入力</div>
+          </div>
+        </button>
 
         {/* 自分で食品を作成 */}
         <button

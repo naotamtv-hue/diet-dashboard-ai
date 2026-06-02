@@ -119,6 +119,73 @@ export async function analyzeMealImage(imageUrlOrDataUrl: string): Promise<MealA
   };
 }
 
+/**
+ * 食品パッケージ／栄養成分表示の写真から、商品名と栄養価を読み取る。
+ * MyFitnessPalのバーコード読取に相当（OCR的にラベルを読む）。
+ */
+export async function analyzePackageImage(imageUrlOrDataUrl: string): Promise<MealAnalysisResult> {
+  const system = `あなたは日本の食品パッケージの「栄養成分表示」を正確に読み取る専門家です。送られた写真（商品パッケージや栄養成分表示のラベル）から、以下を読み取って返してください。
+- description: 商品名を簡潔に（パッケージに書かれた正式名称。例:「ザバス ミルクプロテイン ココア」「サラダチキン プレーン」）。語尾・説明・補足は付けない。20〜30文字程度まで。
+- calories: エネルギー (kcal, 整数)。栄養成分表示の値を読む。
+- proteinG: たんぱく質 (g, 小数1桁まで)
+- fatG: 脂質 (g, 小数1桁まで)
+- carbsG: 炭水化物（または糖質＋食物繊維）(g, 小数1桁まで)
+- confidence: 読み取りの確からしさ ("low" | "medium" | "high")
+重要: 表示が「100gあたり」ではなく「1袋あたり」「1食(◯g)あたり」「1本あたり」など1包装/1食分の値が書かれていればそれを優先する。"当たり"の単位が複数ある場合は1食/1包装分を選ぶ。ラベルが読み取れない・成分表示が無い場合は calories 等を 0 にして description に理由を書く。`;
+
+  const payload = {
+    model: AI_MODEL,
+    messages: [
+      { role: "system", content: system },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "このパッケージ/栄養成分表示から商品名と栄養価を読み取ってください。" },
+          { type: "image_url", image_url: { url: imageUrlOrDataUrl, detail: "high" } },
+        ],
+      },
+    ],
+    max_tokens: 1024,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "package_analysis",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            description: { type: "string" },
+            calories: { type: "number" },
+            proteinG: { type: "number" },
+            fatG: { type: "number" },
+            carbsG: { type: "number" },
+            confidence: { type: "string", enum: ["low", "medium", "high"] },
+          },
+          required: ["description", "calories", "proteinG", "fatG", "carbsG", "confidence"],
+        },
+      },
+    },
+  };
+
+  const data = await chat(payload);
+  const content = data?.choices?.[0]?.message?.content ?? "";
+  let parsed: MealAnalysisResult;
+  try {
+    parsed = typeof content === "string" ? JSON.parse(content) : content;
+  } catch {
+    throw new Error("AI応答の解析に失敗しました");
+  }
+  return {
+    description: String(parsed.description ?? ""),
+    calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
+    proteinG: Math.max(0, Number(Number(parsed.proteinG || 0).toFixed(1))),
+    fatG: Math.max(0, Number(Number(parsed.fatG || 0).toFixed(1))),
+    carbsG: Math.max(0, Number(Number(parsed.carbsG || 0).toFixed(1))),
+    confidence: (parsed.confidence as any) || "medium",
+  };
+}
+
 /** AI応答のJSONを頑丈にパースする（```json フェンスや前後の文字を許容）。 */
 function parseJsonLoose<T = any>(content: unknown): T {
   if (content && typeof content === "object") return content as T;

@@ -12,7 +12,7 @@ import type { User } from "../drizzle/schema";
 import { BODY_PARTS } from "../drizzle/schema";
 import * as db from "./db";
 import { storagePut } from "./storage";
-import { analyzeMealImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
+import { analyzeMealImage, analyzePackageImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
 import { buildPlan, suggestPfcTargets } from "./nutrition";
 import { searchBasicFoods } from "./basic-foods";
 
@@ -184,6 +184,16 @@ export const appRouter = router({
         const origin = `${ctx.req.protocol}://${ctx.req.headers.host}`;
         const absolute = url.startsWith("http") ? url : `${origin}${url}`;
         const result = await analyzeMealImage(absolute);
+        return { imageUrl: url, analysis: result };
+      }),
+
+    analyzePackage: protectedProcedure
+      .input(z.object({ imageDataUrl: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const { url } = await uploadDataUrl(ctx.user.id, input.imageDataUrl, "meals");
+        const origin = `${ctx.req.protocol}://${ctx.req.headers.host}`;
+        const absolute = url.startsWith("http") ? url : `${origin}${url}`;
+        const result = await analyzePackageImage(absolute);
         return { imageUrl: url, analysis: result };
       }),
 
