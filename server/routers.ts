@@ -624,6 +624,16 @@ export const appRouter = router({
       }),
   }),
 
+  /* ============================== water ============================== */
+  water: router({
+    get: protectedProcedure
+      .input(z.object({ date: dateStringSchema }))
+      .query(({ ctx, input }) => db.getWaterCups(ctx.user.id, input.date)),
+    set: protectedProcedure
+      .input(z.object({ date: dateStringSchema, cups: z.number().int().min(0).max(30) }))
+      .mutation(({ ctx, input }) => db.setWaterCups(ctx.user.id, input.date, input.cups)),
+  }),
+
   /* ============================== convenience ============================== */
   convenience: router({
     search: protectedProcedure

@@ -24,6 +24,7 @@ import {
   InsertWorkoutSet,
   customFoods,
   customMeals,
+  waterLogs,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -784,4 +785,32 @@ export async function listCustomMeals(userId: number) {
 export async function deleteCustomMeal(userId: number, id: number) {
   const db = await requireDb();
   await db.delete(customMeals).where(and(eq(customMeals.id, id), eq(customMeals.userId, userId)));
+}
+
+/* ============================== water ============================== */
+
+export async function getWaterCups(userId: number, logDate: string) {
+  const db = await requireDb();
+  const [row] = await db
+    .select()
+    .from(waterLogs)
+    .where(and(eq(waterLogs.userId, userId), eq(waterLogs.logDate, logDate)))
+    .limit(1);
+  return row?.cups ?? 0;
+}
+
+export async function setWaterCups(userId: number, logDate: string, cups: number) {
+  const db = await requireDb();
+  const safe = Math.max(0, Math.min(30, Math.round(cups)));
+  const [existing] = await db
+    .select()
+    .from(waterLogs)
+    .where(and(eq(waterLogs.userId, userId), eq(waterLogs.logDate, logDate)))
+    .limit(1);
+  if (existing) {
+    await db.update(waterLogs).set({ cups: safe }).where(eq(waterLogs.id, existing.id));
+  } else {
+    await db.insert(waterLogs).values({ userId, logDate, cups: safe });
+  }
+  return safe;
 }

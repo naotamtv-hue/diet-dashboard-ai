@@ -307,3 +307,22 @@ export const customMeals = sqliteTable(
 
 export type CustomMeal = typeof customMeals.$inferSelect;
 export type InsertCustomMeal = typeof customMeals.$inferInsert;
+
+/**
+ * 水分記録（MyFitnessPalの水ログ）。1日1行、cups は杯数(1杯=250ml)。
+ */
+export const waterLogs = sqliteTable(
+  "water_logs",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    logDate: text("logDate").notNull(),
+    cups: integer("cups").notNull().default(0),
+    createdAt: ts("createdAt"),
+  },
+  (t) => ({
+    userDateIdx: index("water_logs_user_date_idx").on(t.userId, t.logDate),
+  })
+);
+
+export type WaterLog = typeof waterLogs.$inferSelect;

@@ -19,7 +19,7 @@ import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl, todayDateString } from "@/
 import FoodSearch from "@/components/FoodSearch";
 import { trpc } from "@/lib/trpc";
 import { mealMotivation } from "@/lib/motivation";
-import { Bookmark, Camera, ChevronLeft, ChevronRight, Copy, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { Bookmark, Camera, ChevronLeft, ChevronRight, Copy, Droplet, Loader2, Minus, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -532,6 +532,9 @@ export default function Meals() {
         );
       })}
 
+      {/* 水分（MyFitnessPal風） */}
+      <WaterCard date={date} />
+
       {/* MyFitnessPal風 フード検索（全画面） */}
       {addMeal && (
         <FoodSearch date={date} initialMealType={addMeal} onClose={() => setAddMeal(null)} />
@@ -649,6 +652,71 @@ function NumField({ label, value, onChange }: { label: string; value: string; on
     <div className="space-y-2">
       <Label className="section-label">{label}</Label>
       <Input inputMode="decimal" type="number" value={value} onChange={(e) => onChange(e.target.value)} className="h-11" />
+    </div>
+  );
+}
+
+/* ── 水分カード（1杯=250ml） ── */
+function WaterCard({ date }: { date: string }) {
+  const CUP_ML = 250;
+  const utils = trpc.useUtils();
+  const waterQ = trpc.water.get.useQuery({ date });
+  const setM = trpc.water.set.useMutation({
+    onMutate: async (vars) => {
+      await utils.water.get.cancel({ date });
+      const prev = utils.water.get.getData({ date });
+      utils.water.get.setData({ date }, vars.cups);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev !== undefined) utils.water.get.setData({ date }, ctx.prev);
+    },
+    onSettled: () => utils.water.get.invalidate({ date }),
+  });
+  const cups = waterQ.data ?? 0;
+  const set = (n: number) => setM.mutate({ date, cups: Math.max(0, Math.min(30, n)) });
+
+  return (
+    <div className="rounded-xl px-4 py-4" style={CARD}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Droplet className="h-4 w-4" style={{ color: "oklch(0.6 0.13 230)" }} />
+          <span className="text-base font-bold text-slate-900">水分</span>
+        </div>
+        <div className="text-xs font-semibold" style={{ color: "oklch(0.6 0.13 230)" }}>
+          {(cups * CUP_ML).toLocaleString()} ml · {cups}杯
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => set(cups - 1)}
+          disabled={cups <= 0}
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40"
+          style={{ background: "oklch(0.95 0.03 230)", color: "oklch(0.55 0.13 230)" }}
+          aria-label="水分を減らす"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+        <div className="flex-1 flex gap-1 overflow-hidden">
+          {Array.from({ length: Math.max(8, cups) }).slice(0, 12).map((_, i) => (
+            <div
+              key={i}
+              onClick={() => set(i + 1)}
+              className="flex-1 h-9 rounded-md cursor-pointer transition-colors"
+              style={{ background: i < cups ? "oklch(0.7 0.12 230)" : "oklch(0.94 0.01 230)", maxWidth: "28px" }}
+            />
+          ))}
+        </div>
+        <button
+          onClick={() => set(cups + 1)}
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: "oklch(0.6 0.13 230)", color: "white" }}
+          aria-label="水分を追加"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="text-[10px] text-muted-foreground mt-2">コップ1杯 = 250ml ・ 目安は1日約2L（8杯）</div>
     </div>
   );
 }
