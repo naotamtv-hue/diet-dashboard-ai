@@ -101,7 +101,7 @@ export default function Weight() {
         {startW != null && currentW != null && (
           <div className="mt-3 text-xs text-muted-foreground">
             開始から{" "}
-            <strong style={{ color: (startW - currentW) >= 0 ? "oklch(0.72 0.18 155)" : "oklch(0.65 0.22 25)" }}>
+            <strong style={{ color: (startW - currentW) >= 0 ? "oklch(0.72 0.18 130)" : "oklch(0.65 0.22 25)" }}>
               {(startW - currentW) >= 0 ? "-" : "+"}{Math.abs(startW - currentW).toFixed(1)} kg
             </strong>{" "}
             の変化
@@ -251,7 +251,7 @@ function WeightBox({ label, value, highlight }: { label: string; value: string; 
       <div className="text-[10px] font-medium text-muted-foreground">{label}</div>
       <div
         className="text-xl font-bold mt-1 leading-none"
-        style={{ color: highlight ? "oklch(0.58 0.19 254)" : "oklch(0.24 0.03 252)" }}
+        style={{ color: highlight ? "oklch(0.38 0.14 268)" : "oklch(0.24 0.03 252)" }}
       >
         {value}
       </div>

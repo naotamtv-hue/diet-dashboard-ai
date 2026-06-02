@@ -34,10 +34,10 @@ function formatDate(year: number, month: number, day: number) {
 }
 
 function calorieColor(kcal: number, target: number | null) {
-  if (!target) return "oklch(0.58 0.19 254)";
+  if (!target) return "oklch(0.38 0.14 268)";
   const ratio = kcal / target;
-  if (ratio < 0.7) return "oklch(0.58 0.19 254)";
-  if (ratio <= 1.1) return "oklch(0.72 0.18 155)";
+  if (ratio < 0.7) return "oklch(0.38 0.14 268)";
+  if (ratio <= 1.1) return "oklch(0.72 0.18 130)";
   if (ratio <= 1.3) return "oklch(0.75 0.18 55)";
   return "oklch(0.65 0.22 25)";
 }
@@ -113,7 +113,7 @@ export default function CalendarView() {
           </div>
           <div>
             <div className="section-label mb-1">平均摂取</div>
-            <div className="text-xl font-bold" style={{ color: "oklch(0.58 0.19 254)" }}>
+            <div className="text-xl font-bold" style={{ color: "oklch(0.38 0.14 268)" }}>
               {avgCalories > 0 ? avgCalories.toLocaleString() : "—"}
               <span className="text-xs font-normal text-muted-foreground ml-0.5">kcal</span>
             </div>
@@ -162,7 +162,7 @@ export default function CalendarView() {
               key={d}
               className="text-center text-[11px] font-semibold py-1"
               style={{
-                color: i === 0 ? "oklch(0.65 0.22 25)" : i === 6 ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
+                color: i === 0 ? "oklch(0.65 0.22 25)" : i === 6 ? "oklch(0.38 0.14 268)" : "oklch(0.58 0.02 252)",
               }}
             >
               {d}
@@ -195,7 +195,7 @@ export default function CalendarView() {
                     ? "oklch(0.965 0.004 250)"
                     : "transparent",
                   border: isSelected
-                    ? "1.5px solid oklch(0.58 0.19 254)"
+                    ? "1.5px solid oklch(0.38 0.14 268)"
                     : isToday
                     ? "1.5px solid oklch(0.62 0.18 220 / 0.5)"
                     : hasRecord
@@ -207,11 +207,11 @@ export default function CalendarView() {
                   className="text-xs font-semibold leading-none"
                   style={{
                     color: isToday
-                      ? "oklch(0.58 0.19 254)"
+                      ? "oklch(0.38 0.14 268)"
                       : dow === 0
                       ? "oklch(0.65 0.22 25)"
                       : dow === 6
-                      ? "oklch(0.58 0.19 254)"
+                      ? "oklch(0.38 0.14 268)"
                       : "oklch(0.30 0.03 252)",
                     fontWeight: isToday ? 700 : 500,
                   }}
@@ -247,7 +247,7 @@ export default function CalendarView() {
           {targetCalories && (
             <div className="flex items-center gap-3 ml-auto">
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ background: "oklch(0.72 0.18 155)" }} />
+                <div className="w-2 h-2 rounded-full" style={{ background: "oklch(0.72 0.18 130)" }} />
                 <span className="text-[10px] text-muted-foreground">目標内</span>
               </div>
               <div className="flex items-center gap-1">
@@ -288,7 +288,7 @@ export default function CalendarView() {
                       <div className="text-[9px] text-muted-foreground">{label}</div>
                       <div
                         className="text-base font-bold mt-0.5"
-                        style={{ color: accent ? "oklch(0.58 0.19 254)" : "oklch(0.90 0.01 220)" }}
+                        style={{ color: accent ? "oklch(0.38 0.14 268)" : "oklch(0.90 0.01 220)" }}
                       >
                         {value}
                       </div>
@@ -326,7 +326,7 @@ export default function CalendarView() {
                               </div>
                               <div
                                 className="text-sm font-bold shrink-0"
-                                style={{ color: "oklch(0.58 0.19 254)" }}
+                                style={{ color: "oklch(0.38 0.14 268)" }}
                               >
                                 {Math.round(Number(item.calories))}
                                 <span className="text-[9px] font-normal text-muted-foreground ml-0.5">kcal</span>

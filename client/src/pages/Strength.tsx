@@ -28,8 +28,8 @@ const INNER = {
   background: "oklch(0.965 0.004 250)",
   border: "1px solid oklch(0.92 0.006 250)",
 } as const;
-const ACCENT = "oklch(0.58 0.19 254)";
-const GREEN = "oklch(0.62 0.16 155)";
+const ACCENT = "oklch(0.38 0.14 268)";
+const GREEN = "oklch(0.62 0.16 130)";
 
 const BODY_PARTS = ["chest", "back", "legs", "shoulders", "arms", "abs", "cardio", "other"] as const;
 type BodyPart = (typeof BODY_PARTS)[number];
@@ -438,7 +438,7 @@ function CardioLogger({ date, exerciseName, onBack }: { date: string; exerciseNa
         </Button>
 
         {kcal !== null && (
-          <div className="rounded-xl px-4 py-3" style={{ background: "oklch(0.97 0.02 155)", border: "1px solid oklch(0.85 0.08 155)" }}>
+          <div className="rounded-xl px-4 py-3" style={{ background: "oklch(0.97 0.02 130)", border: "1px solid oklch(0.85 0.08 130)" }}>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold" style={{ color: GREEN }}>{Math.round(kcal)}</span>
               <span className="text-sm text-muted-foreground">kcal 消費（推定）</span>
@@ -674,7 +674,7 @@ function RestTimer() {
   return (
     <div className="rounded-xl px-4 py-3" style={CARD}>
       <div className="flex items-center gap-3">
-        <Timer className="h-5 w-5 flex-shrink-0" style={{ color: remaining === 0 ? "oklch(0.72 0.18 155)" : ACCENT }} />
+        <Timer className="h-5 w-5 flex-shrink-0" style={{ color: remaining === 0 ? "oklch(0.72 0.18 130)" : ACCENT }} />
         <div className="text-3xl font-bold text-slate-900 tabular-nums w-[72px]">{mm}:{ss}</div>
         <div className="flex gap-1.5 ml-auto">
           <button

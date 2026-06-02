@@ -6,7 +6,7 @@ import { Camera, ChevronLeft, Pencil, Plus, PlusCircle, ScanLine, Search, Sparkl
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-const BLUE = "oklch(0.58 0.19 254)";
+const BLUE = "oklch(0.38 0.14 268)";
 
 type MealType = (typeof MEAL_TYPES)[number];
 type Per100 = { kcal: number; p: number; f: number; c: number };
@@ -412,15 +412,15 @@ export default function FoodSearch({
               onClick={() => packageRef.current?.click()}
               disabled={packageM.isPending}
               className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border"
-              style={{ borderColor: "oklch(0.72 0.18 155)" }}
+              style={{ borderColor: "oklch(0.72 0.18 130)" }}
             >
               {packageM.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
+                <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" style={{ color: "oklch(0.6 0.16 130)" }} />
               ) : (
-                <ScanLine className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
+                <ScanLine className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.6 0.16 130)" }} />
               )}
               <div className="flex-1 text-left">
-                <div className="text-sm font-semibold" style={{ color: "oklch(0.5 0.14 155)" }}>
+                <div className="text-sm font-semibold" style={{ color: "oklch(0.5 0.14 130)" }}>
                   {packageM.isPending ? "成分表示を読み取り中..." : "パッケージの栄養成分表示から登録"}
                 </div>
                 <div className="text-[11px] text-muted-foreground">商品の成分表示を撮影 → 自動で栄養を入力</div>
@@ -486,7 +486,7 @@ export default function FoodSearch({
                         <button
                           onClick={() => logMealItems(m.name, m.items)}
                           className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
-                          style={{ background: "oklch(0.95 0.02 254)", color: BLUE }}
+                          style={{ background: "oklch(0.95 0.03 268)", color: BLUE }}
                           aria-label="追加"
                         >
                           <Plus className="h-5 w-5" />
@@ -573,7 +573,7 @@ export default function FoodSearch({
                 <button
                   onClick={() => quickAdd(f)}
                   className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: "oklch(0.95 0.02 254)", color: BLUE }}
+                  style={{ background: "oklch(0.95 0.03 268)", color: BLUE }}
                   aria-label="追加"
                 >
                   <Plus className="h-5 w-5" />
@@ -695,7 +695,7 @@ function FoodDetail({
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">分量（グラム）</span>
               <div className="flex items-center gap-2">
-                <button onClick={() => setG(grams - 10)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                <button onClick={() => setG(grams - 10)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.02 268)", color: BLUE }}>
                   <Minus className="h-4 w-4" />
                 </button>
                 <div className="flex items-baseline gap-0.5 w-[72px] justify-center">
@@ -708,7 +708,7 @@ function FoodDetail({
                   />
                   <span className="text-sm text-muted-foreground">g</span>
                 </div>
-                <button onClick={() => setG(grams + 10)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                <button onClick={() => setG(grams + 10)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.02 268)", color: BLUE }}>
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
@@ -730,11 +730,11 @@ function FoodDetail({
           <div className="flex items-center justify-between rounded-xl px-4 py-3 bg-card border border-border">
             <span className="text-sm text-muted-foreground">分量（人前）</span>
             <div className="flex items-center gap-3">
-              <button onClick={() => setM(mult - 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+              <button onClick={() => setM(mult - 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.02 268)", color: BLUE }}>
                 <Minus className="h-4 w-4" />
               </button>
               <span className="text-lg font-bold text-foreground w-10 text-center tabular-nums">{mult}</span>
-              <button onClick={() => setM(mult + 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+              <button onClick={() => setM(mult + 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.02 268)", color: BLUE }}>
                 <Plus className="h-4 w-4" />
               </button>
             </div>
@@ -767,7 +767,7 @@ function FoodDetail({
                 {([
                   { l: "タンパク質", k: "proteinG", c: BLUE },
                   { l: "脂質", k: "fatG", c: "oklch(0.75 0.15 55)" },
-                  { l: "炭水化物", k: "carbsG", c: "oklch(0.62 0.16 155)" },
+                  { l: "炭水化物", k: "carbsG", c: "oklch(0.62 0.16 130)" },
                 ] as const).map((x) => (
                   <div key={x.l}>
                     <div className="flex items-end justify-center gap-0.5">
@@ -795,7 +795,7 @@ function FoodDetail({
                 {[
                   { l: "タンパク質", v: scaled.proteinG, c: BLUE },
                   { l: "脂質", v: scaled.fatG, c: "oklch(0.75 0.15 55)" },
-                  { l: "炭水化物", v: scaled.carbsG, c: "oklch(0.62 0.16 155)" },
+                  { l: "炭水化物", v: scaled.carbsG, c: "oklch(0.62 0.16 130)" },
                 ].map((x) => (
                   <div key={x.l}>
                     <div className="text-lg font-bold" style={{ color: x.c }}>{Math.round(x.v)}g</div>
@@ -1052,11 +1052,11 @@ function MealBuilder({
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-[11px] text-muted-foreground">数量</span>
-                  <button onClick={() => setQty(i, it.qty - 0.5)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                  <button onClick={() => setQty(i, it.qty - 0.5)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.02 268)", color: BLUE }}>
                     <Minus className="h-3.5 w-3.5" />
                   </button>
                   <span className="text-sm font-bold text-foreground w-8 text-center tabular-nums">{it.qty}</span>
-                  <button onClick={() => setQty(i, it.qty + 0.5)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                  <button onClick={() => setQty(i, it.qty + 0.5)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.02 268)", color: BLUE }}>
                     <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -1069,7 +1069,7 @@ function MealBuilder({
         <button
           onClick={() => setPicking(true)}
           className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-          style={{ background: "oklch(0.95 0.02 254)", color: BLUE }}
+          style={{ background: "oklch(0.95 0.03 268)", color: BLUE }}
         >
           <Plus className="h-4 w-4" /> 食品を追加
         </button>

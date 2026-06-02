@@ -48,7 +48,7 @@
 ───────────────────────────────────────────── */
 :root {
   /* Primary: MFP blue */
-  --primary: oklch(0.58 0.19 254);
+  --primary: oklch(0.38 0.14 268);
   --primary-foreground: oklch(1 0 0);
 
   /* Secondary: light grey */
@@ -71,7 +71,7 @@
   --muted-foreground: oklch(0.55 0.02 252);
 
   /* Accent: green (success / calories remaining) */
-  --accent: oklch(0.62 0.16 155);
+  --accent: oklch(0.62 0.16 130);
   --accent-foreground: oklch(1 0 0);
 
   --destructive: oklch(0.6 0.22 25);
@@ -80,11 +80,11 @@
   /* Borders: light grey lines */
   --border: oklch(0.92 0.005 250);
   --input: oklch(0.94 0.004 250);
-  --ring: oklch(0.58 0.19 254);
+  --ring: oklch(0.38 0.14 268);
 
   /* Chart palette: MFP-style */
   --chart-1: oklch(0.62 0.18 220);   /* blue — protein */
-  --chart-2: oklch(0.72 0.18 155);   /* green — carbs */
+  --chart-2: oklch(0.72 0.18 130);   /* green — carbs */
   --chart-3: oklch(0.75 0.18 55);    /* yellow — fat */
   --chart-4: oklch(0.65 0.22 25);    /* red — over */
   --chart-5: oklch(0.68 0.14 290);   /* purple */
@@ -116,15 +116,15 @@
   --secondary-foreground: oklch(0.85 0.02 220);
   --muted: oklch(0.24 0.04 240);
   --muted-foreground: oklch(0.62 0.03 220);
-  --accent: oklch(0.72 0.18 155);
-  --accent-foreground: oklch(0.10 0.02 155);
+  --accent: oklch(0.72 0.18 130);
+  --accent-foreground: oklch(0.10 0.02 130);
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.30 0.04 240);
   --input: oklch(0.22 0.05 240);
   --ring: oklch(0.62 0.18 220);
   --chart-1: oklch(0.62 0.18 220);
-  --chart-2: oklch(0.72 0.18 155);
+  --chart-2: oklch(0.72 0.18 130);
   --chart-3: oklch(0.75 0.18 55);
   --chart-4: oklch(0.65 0.22 25);
   --chart-5: oklch(0.68 0.14 290);
@@ -226,12 +226,12 @@
   /* ── Nutrient color helpers ── */
   .nutrient-protein { color: oklch(0.62 0.18 220); }
   .nutrient-fat     { color: oklch(0.75 0.18 55); }
-  .nutrient-carbs   { color: oklch(0.72 0.18 155); }
+  .nutrient-carbs   { color: oklch(0.72 0.18 130); }
   .nutrient-cal     { color: oklch(0.80 0.12 55); }
 
   .bg-nutrient-protein { background: oklch(0.62 0.18 220); }
   .bg-nutrient-fat     { background: oklch(0.75 0.18 55); }
-  .bg-nutrient-carbs   { background: oklch(0.72 0.18 155); }
+  .bg-nutrient-carbs   { background: oklch(0.72 0.18 130); }
 
   /* ── Progress bar ── */
   .progress-track {

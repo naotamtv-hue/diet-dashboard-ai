@@ -188,7 +188,7 @@ export default function Coach() {
                   <div className="text-base font-bold text-slate-900">{day.day}</div>
                   <div
                     className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{ background: "oklch(0.58 0.19 254 / 0.12)", color: "oklch(0.58 0.19 254)" }}
+                    style={{ background: "oklch(0.58 0.19 254 / 0.12)", color: "oklch(0.38 0.14 268)" }}
                   >
                     {day.focus}
                   </div>
@@ -197,7 +197,7 @@ export default function Coach() {
                   {day.exercises.map((ex, i) => (
                     <div key={i} className="rounded-xl px-3 py-3" style={INNER}>
                       <div className="flex items-start gap-2">
-                        <Dumbbell className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
+                        <Dumbbell className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.38 0.14 268)" }} />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-slate-900">
                             {ex.name}

@@ -128,12 +128,12 @@ export default function Workouts() {
           className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5"
           style={{ background: "oklch(0.58 0.19 254 / 0.1)", border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}
         >
-          <Dumbbell className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
+          <Dumbbell className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.38 0.14 268)" }} />
           <div className="flex-1 min-w-0 text-left">
             <div className="text-sm font-bold text-slate-900">筋トレを種目別に記録</div>
             <div className="text-[11px] text-muted-foreground">部位・種目ごとにセット／重量／回数・RM・タイマー</div>
           </div>
-          <span className="text-lg" style={{ color: "oklch(0.58 0.19 254)" }}>›</span>
+          <span className="text-lg" style={{ color: "oklch(0.38 0.14 268)" }}>›</span>
         </button>
       </Link>
 
@@ -204,7 +204,7 @@ export default function Workouts() {
                 className="py-2.5 rounded-xl text-sm font-semibold transition-colors border"
                 style={
                   incline === opt.v
-                    ? { background: "oklch(0.58 0.19 254)", color: "white", borderColor: "transparent" }
+                    ? { background: "oklch(0.38 0.14 268)", color: "white", borderColor: "transparent" }
                     : { background: "oklch(0.965 0.004 250)", color: "oklch(0.5 0.02 252)", borderColor: "oklch(0.92 0.006 250)" }
                 }
               >
@@ -232,7 +232,7 @@ export default function Workouts() {
               style={{ background: "oklch(0.72 0.18 155 / 0.15)", border: "1px solid oklch(0.72 0.18 155 / 0.3)" }}
             >
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold" style={{ color: "oklch(0.72 0.18 155)" }}>
+                <span className="text-2xl font-bold" style={{ color: "oklch(0.72 0.18 130)" }}>
                   {Math.round(estimatedKcal)}
                 </span>
                 <span className="text-sm text-muted-foreground">kcal 消費（推定）</span>
@@ -270,7 +270,7 @@ export default function Workouts() {
             style={{ background: "oklch(0.72 0.18 155 / 0.15)", border: "1px solid oklch(0.72 0.18 155 / 0.3)" }}
           >
             <div className="text-[10px] font-medium text-muted-foreground">消費kcal</div>
-            <div className="text-2xl font-bold mt-1" style={{ color: "oklch(0.72 0.18 155)" }}>
+            <div className="text-2xl font-bold mt-1" style={{ color: "oklch(0.72 0.18 130)" }}>
               {Math.round(totalKcal)}
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function Workouts() {
                     {w.weightKg ? `${w.weightKg}kg × ${w.reps ?? "-"}回 × ${w.sets ?? "-"}セット · ` : ""}
                     {w.durationMin ? `${w.durationMin}分 · ` : ""}
                     {INTENSITY_LABELS[w.intensity]} ·{" "}
-                    <strong style={{ color: "oklch(0.72 0.18 155)" }}>
+                    <strong style={{ color: "oklch(0.72 0.18 130)" }}>
                       {Math.round(Number(w.caloriesBurned ?? 0))}
                     </strong>{" "}
                     kcal

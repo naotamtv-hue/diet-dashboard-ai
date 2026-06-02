@@ -232,7 +232,7 @@ function PasswordChangeCard() {
       </div>
       <Button
         className="h-11 w-full font-semibold rounded-xl"
-        style={{ background: "oklch(0.58 0.19 254)" }}
+        style={{ background: "oklch(0.38 0.14 268)" }}
         disabled={m.isPending || !cur || !next || !confirm}
         onClick={submit}
       >

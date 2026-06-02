@@ -10,7 +10,7 @@ export default function NotFound() {
       <div className="text-center max-w-sm">
         <div
           className="text-7xl font-bold mb-4"
-          style={{ color: "oklch(0.58 0.19 254)" }}
+          style={{ color: "oklch(0.38 0.14 268)" }}
         >
           404
         </div>

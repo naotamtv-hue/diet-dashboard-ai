@@ -9,8 +9,8 @@ import { toast } from "sonner";
 
 const PLAN_STORAGE_KEY = "trainer:lastMealPlan";
 
-const BLUE = "oklch(0.58 0.19 254)";
-const GREEN = "oklch(0.62 0.16 155)";
+const BLUE = "oklch(0.38 0.14 268)";
+const GREEN = "oklch(0.62 0.16 130)";
 
 type Plan = {
   goalAssessment: string;
@@ -119,7 +119,7 @@ export default function Trainer() {
                 style={
                   plan.isAggressive
                     ? { background: "oklch(0.97 0.03 60)", borderColor: "oklch(0.85 0.1 60)" }
-                    : { background: "oklch(0.97 0.02 155)", borderColor: "oklch(0.85 0.08 155)" }
+                    : { background: "oklch(0.97 0.02 130)", borderColor: "oklch(0.85 0.08 130)" }
                 }
               >
                 <div className="flex items-start gap-2">
@@ -216,7 +216,7 @@ function MealCard({
     <div className="rounded-xl px-4 py-3.5 bg-card border border-border">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-bold text-foreground">{mealType}</span>
-        <span className="text-sm font-bold" style={{ color: "oklch(0.58 0.19 254)" }}>{Math.round(total)} kcal</span>
+        <span className="text-sm font-bold" style={{ color: "oklch(0.38 0.14 268)" }}>{Math.round(total)} kcal</span>
       </div>
       <div className="space-y-1.5">
         {items.map((it, i) => (

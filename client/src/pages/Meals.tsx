@@ -160,14 +160,14 @@ function ConvenienceModal({
                   }}
                 >
                   <div className="flex items-start gap-2.5">
-                    <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
+                    <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.38 0.14 268)" }} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-slate-900 leading-snug">{item.name}</div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">
                         {item.chain === "seven" ? "セブン-イレブン" : item.chain === "familymart" ? "ファミリーマート" : "ローソン"}
                         {item.priceYen ? ` · ¥${item.priceYen}` : ""}
                       </div>
-                      <div className="text-xs mt-1 font-semibold" style={{ color: "oklch(0.58 0.19 254)" }}>
+                      <div className="text-xs mt-1 font-semibold" style={{ color: "oklch(0.38 0.14 268)" }}>
                         {Number(item.calories)}kcal
                         <span className="text-muted-foreground font-normal ml-1.5">
                           P{Number(item.proteinG)}g / F{Number(item.fatG)}g / C{Number(item.carbsG)}g
@@ -367,7 +367,7 @@ export default function Meals() {
         <button
           type="button"
           className="text-xs font-semibold flex items-center gap-1 px-3 py-2 rounded-full disabled:opacity-50 flex-shrink-0"
-          style={{ background: "oklch(0.95 0.02 254)", color: "oklch(0.58 0.19 254)" }}
+          style={{ background: "oklch(0.95 0.03 268)", color: "oklch(0.38 0.14 268)" }}
           disabled={copyM.isPending}
           onClick={() => copyM.mutate({ fromDate: yesterdayStr, toDate: date })}
         >
@@ -434,9 +434,9 @@ export default function Meals() {
               </div>
             )}
             <div className="grid grid-cols-3 gap-3 text-xs pt-3" style={{ borderTop: "1px solid oklch(0.94 0.005 250)" }}>
-              <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.58 0.19 254)" />
+              <MacroStat label="タンパク質" value={Math.round(summaryQ.data?.proteinG ?? 0)} color="oklch(0.38 0.14 268)" />
               <MacroStat label="脂質" value={Math.round(summaryQ.data?.fatG ?? 0)} color="oklch(0.75 0.18 55)" />
-              <MacroStat label="炭水化物" value={Math.round(summaryQ.data?.carbsG ?? 0)} color="oklch(0.72 0.18 155)" />
+              <MacroStat label="炭水化物" value={Math.round(summaryQ.data?.carbsG ?? 0)} color="oklch(0.72 0.18 130)" />
             </div>
           </div>
         );
@@ -475,7 +475,7 @@ export default function Meals() {
                     <Bookmark className="h-3.5 w-3.5" /> 保存
                   </button>
                 )}
-                <div className="text-xs font-semibold" style={{ color: "oklch(0.58 0.19 254)" }}>
+                <div className="text-xs font-semibold" style={{ color: "oklch(0.38 0.14 268)" }}>
                   {Math.round(kcal)} kcal · {list.length}件
                 </div>
               </div>
@@ -524,7 +524,7 @@ export default function Meals() {
             <button
               onClick={() => setAddMeal(t)}
               className="w-full mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors"
-              style={{ background: "oklch(0.95 0.02 254)", color: "oklch(0.58 0.19 254)" }}
+              style={{ background: "oklch(0.95 0.03 268)", color: "oklch(0.38 0.14 268)" }}
             >
               <Plus className="h-4 w-4" /> フードを追加
             </button>
@@ -626,7 +626,7 @@ function EditMealModal({
           </div>
           <Button
             className="w-full h-12 font-bold rounded-xl"
-            style={{ background: "oklch(0.58 0.19 254)" }}
+            style={{ background: "oklch(0.38 0.14 268)" }}
             disabled={saving}
             onClick={() =>
               onSave({
@@ -726,7 +726,7 @@ function FormulaItem({ value, label, highlight }: { value: number; label: string
     <div className="flex flex-col items-center min-w-0">
       <div
         className="text-lg font-bold leading-none tabular-nums"
-        style={{ color: highlight ? (value < 0 ? "oklch(0.62 0.2 25)" : "oklch(0.58 0.19 254)") : "oklch(0.2 0.02 250)" }}
+        style={{ color: highlight ? (value < 0 ? "oklch(0.62 0.2 25)" : "oklch(0.38 0.14 268)") : "oklch(0.2 0.02 250)" }}
       >
         {value}
       </div>

@@ -182,9 +182,9 @@ export default function Goal() {
           <div className="rounded-xl px-4 py-3" style={INNER}>
             <div className="section-label mb-3">PFC目安（タンパク質・脂質・炭水化物）</div>
             <div className="flex gap-6">
-              <PfcItem label="タンパク質" value={plan.pfc.proteinG} color="oklch(0.58 0.19 254)" />
+              <PfcItem label="タンパク質" value={plan.pfc.proteinG} color="oklch(0.38 0.14 268)" />
               <PfcItem label="脂質" value={plan.pfc.fatG} color="oklch(0.75 0.18 55)" />
-              <PfcItem label="炭水化物" value={plan.pfc.carbsG} color="oklch(0.72 0.18 155)" />
+              <PfcItem label="炭水化物" value={plan.pfc.carbsG} color="oklch(0.72 0.18 130)" />
             </div>
           </div>
         </div>
@@ -205,7 +205,7 @@ function PlanBox({ label, value, unit, highlight }: { label: string; value: numb
       <div className="text-[10px] font-medium text-muted-foreground leading-tight">{label}</div>
       <div
         className="text-lg font-bold leading-none mt-1"
-        style={{ color: highlight ? "oklch(0.58 0.19 254)" : "oklch(0.24 0.03 252)" }}
+        style={{ color: highlight ? "oklch(0.38 0.14 268)" : "oklch(0.24 0.03 252)" }}
       >
         {value}
       </div>

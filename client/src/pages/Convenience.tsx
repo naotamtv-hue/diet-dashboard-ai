@@ -164,7 +164,7 @@ export default function Convenience() {
             <div className="space-y-2">
               {combo.items.map((it) => (
                 <div key={it.id} className="flex items-center gap-2 text-sm text-foreground">
-                  <ShoppingBag className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
+                  <ShoppingBag className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "oklch(0.38 0.14 268)" }} />
                   <span className="text-[10px] text-muted-foreground flex-shrink-0">
                     [{CHAIN_LABELS[it.chain] ?? it.chain}]
                   </span>
@@ -251,14 +251,14 @@ export default function Convenience() {
           {(searchQ.data ?? []).map((it) => (
             <div key={it.id} className="rounded-xl px-4 py-3" style={INNER}>
               <div className="flex items-start gap-2">
-                <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
+                <ShoppingBag className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.38 0.14 268)" }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-slate-900">{it.name}</div>
                   <div className="section-label mt-0.5">
                     [{CHAIN_LABELS[it.chain] ?? it.chain}] · {CATEGORY_LABELS[it.category] ?? it.category}
                   </div>
                   <div className="text-xs mt-1">
-                    <strong style={{ color: "oklch(0.58 0.19 254)" }}>{Number(it.calories)}kcal</strong>
+                    <strong style={{ color: "oklch(0.38 0.14 268)" }}>{Number(it.calories)}kcal</strong>
                     <span className="text-muted-foreground ml-1.5">
                       P{Number(it.proteinG)} / F{Number(it.fatG)} / C{Number(it.carbsG)}
                       {it.priceYen ? ` · ¥${it.priceYen}` : ""}
@@ -286,7 +286,7 @@ function MiniStat({ label, value, unit, accent }: { label: string; value: string
       <div className="text-[10px] font-medium text-muted-foreground">{label}</div>
       <div
         className="text-base font-bold leading-none mt-0.5"
-        style={{ color: accent ? "oklch(0.58 0.19 254)" : "oklch(0.24 0.03 252)" }}
+        style={{ color: accent ? "oklch(0.38 0.14 268)" : "oklch(0.24 0.03 252)" }}
       >
         {value}
       </div>

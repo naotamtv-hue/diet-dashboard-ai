@@ -56,7 +56,7 @@ function CalorieRing({
         <circle
           cx={size / 2} cy={size / 2} r={r}
           fill="none"
-          stroke="oklch(0.58 0.19 254)"
+          stroke="oklch(0.38 0.14 268)"
           strokeWidth={stroke}
           strokeDasharray={`${consumedDash} ${circ}`}
           strokeLinecap="round"
@@ -67,7 +67,7 @@ function CalorieRing({
           <circle
             cx={size / 2} cy={size / 2} r={r}
             fill="none"
-            stroke="oklch(0.72 0.18 155)"
+            stroke="oklch(0.72 0.18 130)"
             strokeWidth={stroke}
             strokeDasharray={`${burnedDash} ${circ}`}
             strokeDashoffset={-consumedDash}
@@ -229,7 +229,7 @@ export default function Dashboard() {
           className="rounded-xl px-4 py-4 flex items-center gap-3"
           style={{ background: "oklch(0.58 0.19 254 / 0.1)", border: "1px solid oklch(0.58 0.19 254 / 0.14)" }}
         >
-          <Target className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.58 0.19 254)" }} />
+          <Target className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.38 0.14 268)" }} />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-slate-900">まずは目標を設定しましょう</div>
             <div className="text-xs text-muted-foreground mt-0.5">
@@ -258,12 +258,12 @@ export default function Dashboard() {
           {/* Legend */}
           <div className="flex-1 space-y-3">
             <LegendRow
-              color="oklch(0.58 0.19 254)"
+              color="oklch(0.38 0.14 268)"
               label="摂取"
               value={`${consumed} kcal`}
             />
             <LegendRow
-              color="oklch(0.72 0.18 155)"
+              color="oklch(0.72 0.18 130)"
               label="消費（運動）"
               value={`${Math.round(burned)} kcal`}
             />
@@ -280,7 +280,7 @@ export default function Dashboard() {
                 {remainingBudget} kcal
               </div>
               {burned > 0 && (
-                <div className="text-[11px] mt-0.5" style={{ color: "oklch(0.72 0.18 155)" }}>
+                <div className="text-[11px] mt-0.5" style={{ color: "oklch(0.72 0.18 130)" }}>
                   運動でさらに −{Math.round(burned)}kcalの貯金🔥
                 </div>
               )}
@@ -294,7 +294,7 @@ export default function Dashboard() {
             label="タンパク質"
             value={Math.round(summary?.proteinG ?? 0)}
             target={pfcTarget.p}
-            color="oklch(0.58 0.19 254)"
+            color="oklch(0.38 0.14 268)"
           />
           <MacroRow
             label="脂質"
@@ -306,7 +306,7 @@ export default function Dashboard() {
             label="炭水化物"
             value={Math.round(summary?.carbsG ?? 0)}
             target={pfcTarget.c}
-            color="oklch(0.72 0.18 155)"
+            color="oklch(0.72 0.18 130)"
           />
         </div>
       </div>
@@ -326,7 +326,7 @@ export default function Dashboard() {
             <div className="text-muted-foreground mb-1">→</div>
             <div>
               <div className="text-xs text-muted-foreground">目標</div>
-              <div className="text-2xl font-bold" style={{ color: "oklch(0.72 0.18 155)" }}>{targetW.toFixed(1)}<span className="text-sm font-normal text-muted-foreground ml-1">kg</span></div>
+              <div className="text-2xl font-bold" style={{ color: "oklch(0.72 0.18 130)" }}>{targetW.toFixed(1)}<span className="text-sm font-normal text-muted-foreground ml-1">kg</span></div>
             </div>
             <div className="ml-auto text-right">
               <div className="text-xs text-muted-foreground">あと</div>
@@ -341,7 +341,7 @@ export default function Dashboard() {
           <div className="progress-track" style={{ height: "8px" }}>
             <div
               className="progress-fill"
-              style={{ width: `${lossPct}%`, background: "linear-gradient(90deg, oklch(0.58 0.19 254), oklch(0.72 0.18 155))" }}
+              style={{ width: `${lossPct}%`, background: "linear-gradient(90deg, oklch(0.38 0.14 268), oklch(0.72 0.18 130))" }}
             />
           </div>
 
@@ -351,7 +351,7 @@ export default function Dashboard() {
               className="mt-3 rounded-lg px-3 py-2.5 flex items-start gap-2"
               style={{ background: "oklch(0.965 0.004 250)" }}
             >
-              <TrendingDown className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.18 155)" }} />
+              <TrendingDown className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.18 130)" }} />
               <div className="text-xs text-muted-foreground leading-relaxed">
                 {eta.kind === "down" && (
                   <>
@@ -397,7 +397,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-3">
           <div className="section-label">食事区分</div>
           <Link href="/meals">
-            <button className="text-xs font-medium" style={{ color: "oklch(0.58 0.19 254)" }}>
+            <button className="text-xs font-medium" style={{ color: "oklch(0.38 0.14 268)" }}>
               記録する →
             </button>
           </Link>
@@ -454,7 +454,7 @@ export default function Dashboard() {
                     weeklyQ.data.weightChange == null
                       ? "white"
                       : weeklyQ.data.weightChange <= 0
-                        ? "oklch(0.72 0.18 155)"
+                        ? "oklch(0.72 0.18 130)"
                         : "oklch(0.75 0.18 55)",
                 }}
               >
@@ -472,12 +472,12 @@ export default function Dashboard() {
       <div>
         <div className="section-label mb-3">クイックアクセス</div>
         <div className="grid grid-cols-2 gap-2">
-          <QuickCard to="/meals"       icon={<Apple className="h-4 w-4" />}       title="食事を記録"   sub="写真からAI解析"                    accent="oklch(0.58 0.19 254)" />
-          <QuickCard to="/weight"      icon={<CalendarHeart className="h-4 w-4" />} title="体重を記録" sub={`最新 ${currentW ? currentW.toFixed(1) + " kg" : "未記録"}`} accent="oklch(0.72 0.18 155)" />
+          <QuickCard to="/meals"       icon={<Apple className="h-4 w-4" />}       title="食事を記録"   sub="写真からAI解析"                    accent="oklch(0.38 0.14 268)" />
+          <QuickCard to="/weight"      icon={<CalendarHeart className="h-4 w-4" />} title="体重を記録" sub={`最新 ${currentW ? currentW.toFixed(1) + " kg" : "未記録"}`} accent="oklch(0.72 0.18 130)" />
           <QuickCard to="/workouts"    icon={<Dumbbell className="h-4 w-4" />}    title="運動を記録"   sub={`今日 ${Math.round(burned)} kcal 消費`} accent="oklch(0.75 0.18 55)" />
           <QuickCard to="/coach"       icon={<Sparkles className="h-4 w-4" />}    title="AIパーソナルトレーナー" sub="週次メニュー提案"          accent="oklch(0.68 0.14 290)" />
-          <QuickCard to="/convenience" icon={<ShoppingBag className="h-4 w-4" />} title="コンビニ提案" sub={`残 ${remainingBudget} kcal`} accent="oklch(0.58 0.19 254)" />
-          <QuickCard to="/photos"      icon={<Camera className="h-4 w-4" />}      title="体型写真"     sub={`${photosQ.data?.length ?? 0}枚 記録中`} accent="oklch(0.72 0.18 155)" />
+          <QuickCard to="/convenience" icon={<ShoppingBag className="h-4 w-4" />} title="コンビニ提案" sub={`残 ${remainingBudget} kcal`} accent="oklch(0.38 0.14 268)" />
+          <QuickCard to="/photos"      icon={<Camera className="h-4 w-4" />}      title="体型写真"     sub={`${photosQ.data?.length ?? 0}枚 記録中`} accent="oklch(0.72 0.18 130)" />
         </div>
       </div>
     </div>

@@ -48,7 +48,7 @@ export default function PwaInstallHint() {
     >
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: "oklch(0.58 0.19 254)" }}
+        style={{ background: "oklch(0.38 0.14 268)" }}
       >
         <Share className="h-4 w-4 text-slate-900" />
       </div>

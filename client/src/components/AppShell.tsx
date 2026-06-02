@@ -49,8 +49,8 @@ const BOTTOM_NAV = [
 
 // 中央＋のクイック追加メニュー
 const QUICK_ADD = [
-  { path: "/meals",    label: "食事を記録", icon: Apple,    color: "oklch(0.58 0.19 254)" },
-  { path: "/workouts", label: "運動を記録", icon: Dumbbell, color: "oklch(0.72 0.18 155)" },
+  { path: "/meals",    label: "食事を記録", icon: Apple,    color: "oklch(0.38 0.14 268)" },
+  { path: "/workouts", label: "運動を記録", icon: Dumbbell, color: "oklch(0.72 0.18 130)" },
   { path: "/weight",   label: "体重を記録", icon: Scale,    color: "oklch(0.75 0.18 55)" },
   { path: "/photos",   label: "体型写真",   icon: Camera,   color: "oklch(0.68 0.14 290)" },
 ];
@@ -180,7 +180,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <Avatar className="h-8 w-8 border-2 border-white/20">
                 <AvatarFallback
                   className="text-xs font-bold text-white"
-                  style={{ background: "oklch(0.58 0.19 254)" }}
+                  style={{ background: "oklch(0.38 0.14 268)" }}
                 >
                   {user.name?.charAt(0).toUpperCase() ?? "U"}
                 </AvatarFallback>
@@ -257,7 +257,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 width: "52px",
                 height: "52px",
                 marginTop: "-22px",
-                background: "oklch(0.58 0.19 254)",
+                background: "oklch(0.38 0.14 268)",
                 boxShadow: "0 6px 16px oklch(0.58 0.19 254 / 0.45)",
               }}
             >
@@ -314,9 +314,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="flex flex-col items-center gap-2 w-full py-3 rounded-2xl"
-                  style={active ? { background: "oklch(0.95 0.02 254)" } : undefined}
+                  style={active ? { background: "oklch(0.95 0.03 268)" } : undefined}
                 >
-                  <Icon className="h-6 w-6" style={{ color: active ? "oklch(0.58 0.19 254)" : "oklch(0.45 0.02 252)" }} />
+                  <Icon className="h-6 w-6" style={{ color: active ? "oklch(0.38 0.14 268)" : "oklch(0.45 0.02 252)" }} />
                   <span className="text-[11px] font-medium text-slate-700 text-center leading-tight">{item.label}</span>
                 </button>
               </Link>
@@ -343,12 +343,12 @@ function NavTab({ item, active }: { item: { path: string; label: string; icon: t
             style={{
               width: "1.25rem",
               height: "1.25rem",
-              color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
+              color: active ? "oklch(0.38 0.14 268)" : "oklch(0.58 0.02 252)",
               strokeWidth: active ? 2.5 : 1.8,
             }}
           />
         </div>
-        <span className="text-[10px] font-medium" style={{ color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)" }}>
+        <span className="text-[10px] font-medium" style={{ color: active ? "oklch(0.38 0.14 268)" : "oklch(0.58 0.02 252)" }}>
           {item.label}
         </span>
       </button>
@@ -420,12 +420,12 @@ function LandingPage() {
         {/* Feature List */}
         <div className="space-y-3 mb-12">
           {[
-            { title: "AI食事解析", sub: "写真からカロリー・PFCを自動推定", color: "oklch(0.58 0.19 254)" },
-            { title: "減量計画の自動算出", sub: "基礎代謝から1日の目安カロリーを自動計算", color: "oklch(0.72 0.18 155)" },
+            { title: "AI食事解析", sub: "写真からカロリー・PFCを自動推定", color: "oklch(0.38 0.14 268)" },
+            { title: "減量計画の自動算出", sub: "基礎代謝から1日の目安カロリーを自動計算", color: "oklch(0.72 0.18 130)" },
             { title: "コンビニAI提案", sub: "残カロリーに合う商品を提案", color: "oklch(0.75 0.18 55)" },
             { title: "ビフォーアフター", sub: "体型写真で変化を実感", color: "oklch(0.68 0.14 290)" },
-            { title: "AIパーソナルトレーナー", sub: "目標から週次トレーニングを提案", color: "oklch(0.58 0.19 254)" },
-            { title: "記録リマインド", sub: "未記録の日だけそっと通知", color: "oklch(0.72 0.18 155)" },
+            { title: "AIパーソナルトレーナー", sub: "目標から週次トレーニングを提案", color: "oklch(0.38 0.14 268)" },
+            { title: "記録リマインド", sub: "未記録の日だけそっと通知", color: "oklch(0.72 0.18 130)" },
           ].map(({ title, sub, color }) => (
             <div
               key={title}
@@ -498,6 +498,13 @@ function AuthCard() {
       className="rounded-2xl p-5"
       style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
     >
+      {/* ブランド */}
+      <div className="flex flex-col items-center text-center mb-5">
+        <img src="/kalon-logo.png" alt="Kalon" className="w-16 h-16 object-contain" />
+        <div className="text-xl font-bold mt-1" style={{ color: "#1e2a78" }}>Kalon</div>
+        <div className="text-xs text-muted-foreground mt-1">食事とトレーニングを、ひとつに。</div>
+      </div>
+
       {/* Tabs */}
       <div className="grid grid-cols-2 gap-1 p-1 mb-5 rounded-xl" style={{ background: "oklch(1 0 0)" }}>
         {(["login", "register"] as const).map((m) => (
@@ -508,7 +515,7 @@ function AuthCard() {
             className="py-2 rounded-lg text-sm font-semibold transition-colors"
             style={
               mode === m
-                ? { background: "oklch(0.58 0.19 254)", color: "white" }
+                ? { background: "oklch(0.38 0.14 268)", color: "white" }
                 : { color: "oklch(0.55 0.02 252)" }
             }
           >
@@ -555,7 +562,7 @@ function AuthCard() {
           size="lg"
           disabled={pending}
           className="w-full h-13 text-base font-bold rounded-xl shadow-lg"
-          style={{ background: "oklch(0.58 0.19 254)" }}
+          style={{ background: "oklch(0.38 0.14 268)" }}
         >
           {pending ? "処理中..." : mode === "login" ? "ログイン" : "無料で始める"}
         </Button>

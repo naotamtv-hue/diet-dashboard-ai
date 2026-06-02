@@ -210,7 +210,7 @@ export default function Photos() {
               <div className="section-label">体重変化</div>
               <div
                 className="text-3xl font-bold mt-1"
-                style={{ color: diff >= 0 ? "oklch(0.72 0.18 155)" : "oklch(0.65 0.22 25)" }}
+                style={{ color: diff >= 0 ? "oklch(0.72 0.18 130)" : "oklch(0.65 0.22 25)" }}
               >
                 {diff >= 0 ? "−" : "+"}
                 {Math.abs(diff).toFixed(1)}
