@@ -21,6 +21,12 @@ import {
   Bell,
   ChevronRight,
   UtensilsCrossed,
+  BookOpen,
+  TrendingUp,
+  LayoutGrid,
+  Plus,
+  Scale,
+  X,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -34,25 +40,39 @@ import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 /* ─────────────────────────────────────────────
    Navigation items
 ───────────────────────────────────────────── */
+// MyFitnessPal風ボトムナビ: ホーム / 日記 / 中央＋ / 進捗 / その他
 const BOTTOM_NAV = [
-  { path: "/",          label: "ホーム",   icon: Home },
-  { path: "/meals",     label: "食事",     icon: Apple },
-  { path: "/calendar",  label: "カレンダー", icon: CalendarDays },
-  { path: "/weight",    label: "体重",     icon: CalendarHeart },
-  { path: "/workouts",  label: "運動",     icon: Dumbbell },
+  { path: "/",        label: "ホーム", icon: Home },
+  { path: "/meals",   label: "日記",   icon: BookOpen },
+  { path: "/weight",  label: "進捗",   icon: TrendingUp },
 ];
 
+// 中央＋のクイック追加メニュー
+const QUICK_ADD = [
+  { path: "/meals",    label: "食事を記録", icon: Apple,    color: "oklch(0.58 0.19 254)" },
+  { path: "/workouts", label: "運動を記録", icon: Dumbbell, color: "oklch(0.72 0.18 155)" },
+  { path: "/weight",   label: "体重を記録", icon: Scale,    color: "oklch(0.75 0.18 55)" },
+  { path: "/photos",   label: "体型写真",   icon: Camera,   color: "oklch(0.68 0.14 290)" },
+];
+
+// 「その他」シートに並べる全機能
 const MORE_NAV = [
   { path: "/trainer",     label: "AI食事トレーナー", icon: UtensilsCrossed },
-  { path: "/strength",    label: "筋トレ",    icon: Dumbbell },
   { path: "/coach",       label: "AIパーソナルトレーナー", icon: Sparkles },
+  { path: "/workouts",    label: "運動",     icon: Dumbbell },
+  { path: "/strength",    label: "筋トレ",    icon: Dumbbell },
   { path: "/convenience", label: "コンビニ",  icon: ShoppingBag },
+  { path: "/calendar",    label: "カレンダー", icon: CalendarDays },
   { path: "/photos",      label: "体型写真",  icon: Camera },
   { path: "/goal",        label: "目標設定",  icon: Target },
   { path: "/settings",    label: "通知設定",  icon: Bell },
 ];
 
-const ALL_NAV = [...BOTTOM_NAV, ...MORE_NAV];
+const ALL_NAV = [
+  ...BOTTOM_NAV,
+  { path: "/workouts", label: "運動" },
+  ...MORE_NAV,
+];
 
 /* ─────────────────────────────────────────────
    Layout constants
@@ -69,6 +89,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
 
   useReminderScheduler(Boolean(user));
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
   const streakQ = trpc.stats.streak.useQuery(
     { today: todayDateString() },
     { enabled: Boolean(user), staleTime: 60_000 }
@@ -213,7 +235,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      {/* ── Bottom Nav (mobile only) ── */}
+      {/* ── Bottom Nav (mobile only) — MyFitnessPal風 ── */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
@@ -224,45 +246,140 @@ export default function AppShell({ children }: { children: ReactNode }) {
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        <div className="grid grid-cols-5 h-full">
-          {BOTTOM_NAV.map((item) => {
-            const Icon = item.icon;
-            const active = location === item.path;
+        <div className="grid grid-cols-5 h-full items-center">
+          {/* 左2つ: ホーム / 日記 */}
+          {BOTTOM_NAV.slice(0, 2).map((item) => (
+            <NavTab key={item.path} item={item} active={location === item.path} />
+          ))}
+
+          {/* 中央: ＋ クイック追加（浮き出しFAB） */}
+          <div className="flex items-center justify-center">
+            <button
+              onClick={() => setQuickOpen(true)}
+              aria-label="追加"
+              className="flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform"
+              style={{
+                width: "52px",
+                height: "52px",
+                marginTop: "-22px",
+                background: "oklch(0.58 0.19 254)",
+                boxShadow: "0 6px 16px oklch(0.58 0.19 254 / 0.45)",
+              }}
+            >
+              <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* 右2つ: 進捗 / その他 */}
+          <NavTab item={BOTTOM_NAV[2]} active={location === BOTTOM_NAV[2].path} />
+          <button
+            onClick={() => setMoreOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 w-full h-full"
+            aria-label="その他"
+            style={{ minHeight: "44px" }}
+          >
+            <div className="p-1.5 rounded-xl">
+              <LayoutGrid style={{ width: "1.25rem", height: "1.25rem", color: "oklch(0.58 0.02 252)", strokeWidth: 1.8 }} />
+            </div>
+            <span className="text-[10px] font-medium" style={{ color: "oklch(0.58 0.02 252)" }}>その他</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* ── クイック追加シート ── */}
+      <BottomSheet open={quickOpen} onClose={() => setQuickOpen(false)} title="記録する">
+        <div className="grid grid-cols-4 gap-3 px-2 pb-2">
+          {QUICK_ADD.map((q) => {
+            const Icon = q.icon;
             return (
-              <Link key={item.path} href={item.path}>
+              <Link key={q.label} href={q.path}>
                 <button
-                  className="flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors"
-                  aria-label={item.label}
-                  style={{ minHeight: "44px" }}
+                  onClick={() => setQuickOpen(false)}
+                  className="flex flex-col items-center gap-2 w-full"
                 >
-                  <div
-                    className={`p-1.5 rounded-xl transition-all duration-150 ${
-                      active ? "bg-primary/20" : ""
-                    }`}
-                  >
-                    <Icon
-                      style={{
-                        width: "1.25rem",
-                        height: "1.25rem",
-                        color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
-                        strokeWidth: active ? 2.5 : 1.8,
-                      }}
-                    />
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: q.color }}>
+                    <Icon className="h-6 w-6 text-white" />
                   </div>
-                  <span
-                    className="text-[10px] font-medium"
-                    style={{
-                      color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
-                    }}
-                  >
-                    {item.label}
-                  </span>
+                  <span className="text-[11px] font-medium text-slate-700 text-center leading-tight">{q.label}</span>
                 </button>
               </Link>
             );
           })}
         </div>
-      </nav>
+      </BottomSheet>
+
+      {/* ── その他シート ── */}
+      <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="メニュー">
+        <div className="grid grid-cols-3 gap-3 px-1 pb-2">
+          {MORE_NAV.map((item) => {
+            const Icon = item.icon;
+            const active = location === item.path;
+            return (
+              <Link key={item.label} href={item.path}>
+                <button
+                  onClick={() => setMoreOpen(false)}
+                  className="flex flex-col items-center gap-2 w-full py-3 rounded-2xl"
+                  style={active ? { background: "oklch(0.95 0.02 254)" } : undefined}
+                >
+                  <Icon className="h-6 w-6" style={{ color: active ? "oklch(0.58 0.19 254)" : "oklch(0.45 0.02 252)" }} />
+                  <span className="text-[11px] font-medium text-slate-700 text-center leading-tight">{item.label}</span>
+                </button>
+              </Link>
+            );
+          })}
+        </div>
+      </BottomSheet>
+    </div>
+  );
+}
+
+/* ── ボトムナビのタブ ── */
+function NavTab({ item, active }: { item: { path: string; label: string; icon: typeof Home }; active: boolean }) {
+  const Icon = item.icon;
+  return (
+    <Link href={item.path}>
+      <button
+        className="flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors"
+        aria-label={item.label}
+        style={{ minHeight: "44px" }}
+      >
+        <div className={`p-1.5 rounded-xl transition-all duration-150 ${active ? "bg-primary/20" : ""}`}>
+          <Icon
+            style={{
+              width: "1.25rem",
+              height: "1.25rem",
+              color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)",
+              strokeWidth: active ? 2.5 : 1.8,
+            }}
+          />
+        </div>
+        <span className="text-[10px] font-medium" style={{ color: active ? "oklch(0.58 0.19 254)" : "oklch(0.58 0.02 252)" }}>
+          {item.label}
+        </span>
+      </button>
+    </Link>
+  );
+}
+
+/* ── 下から出るシート ── */
+function BottomSheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-white rounded-t-3xl px-4 pt-3 pb-8 animate-in slide-in-from-bottom duration-200"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4 px-1">
+          <span className="text-base font-bold text-slate-900">{title}</span>
+          <button onClick={onClose} aria-label="閉じる" className="p-1 text-muted-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

@@ -19,7 +19,7 @@ import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl, todayDateString } from "@/
 import FoodSearch from "@/components/FoodSearch";
 import { trpc } from "@/lib/trpc";
 import { mealMotivation } from "@/lib/motivation";
-import { Camera, ChevronLeft, ChevronRight, Copy, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { Bookmark, Camera, ChevronLeft, ChevronRight, Copy, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -229,6 +229,13 @@ export default function Meals() {
       utils.meals.summary.invalidate({ date });
     },
   });
+  const saveMealM = trpc.foods.saveMeal.useMutation({
+    onSuccess: (_d, vars) => {
+      utils.foods.myMeals.invalidate();
+      toast.success(`「${vars.name}」をMyミールに保存しました`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const removeM = trpc.meals.remove.useMutation({
     onSuccess: () => {
       utils.meals.listByDate.invalidate({ date });
@@ -424,8 +431,34 @@ export default function Meals() {
           <div key={t} className="rounded-xl px-4 py-4" style={CARD}>
             <div className="flex items-center justify-between mb-3">
               <div className="text-base font-bold text-slate-900">{MEAL_TYPE_LABELS[t]}</div>
-              <div className="text-xs font-semibold" style={{ color: "oklch(0.58 0.19 254)" }}>
-                {Math.round(kcal)} kcal · {list.length}件
+              <div className="flex items-center gap-2">
+                {list.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-[11px] font-semibold flex items-center gap-0.5 disabled:opacity-50"
+                    style={{ color: "oklch(0.55 0.02 252)" }}
+                    disabled={saveMealM.isPending}
+                    onClick={() => {
+                      const name = window.prompt("Myミールの名前", `${MEAL_TYPE_LABELS[t]}セット`);
+                      if (!name || !name.trim()) return;
+                      saveMealM.mutate({
+                        name: name.trim(),
+                        items: list.map((m) => ({
+                          name: m.description || "（内容未入力）",
+                          calories: Math.round(Number(m.calories)),
+                          proteinG: Math.round(Number(m.proteinG)),
+                          fatG: Math.round(Number(m.fatG)),
+                          carbsG: Math.round(Number(m.carbsG)),
+                        })),
+                      });
+                    }}
+                  >
+                    <Bookmark className="h-3.5 w-3.5" /> 保存
+                  </button>
+                )}
+                <div className="text-xs font-semibold" style={{ color: "oklch(0.58 0.19 254)" }}>
+                  {Math.round(kcal)} kcal · {list.length}件
+                </div>
               </div>
             </div>
             {list.length === 0 ? (

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl } from "@/lib/labels";
-import { Camera, ChevronLeft, Plus, Search, Sparkles, Loader2, Minus } from "lucide-react";
+import { Camera, ChevronLeft, Plus, PlusCircle, Search, Sparkles, Loader2, Minus, UtensilsCrossed } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -34,9 +34,15 @@ export default function FoodSearch({
   const [mealType, setMealType] = useState<MealType>(initialMealType);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<Food | null>(null);
+  const [creating, setCreating] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const analyzeM = trpc.meals.analyzePhoto.useMutation();
 
+  const myFoodsQ = trpc.foods.myFoods.useQuery(
+    { keyword: query.trim() || undefined },
+    { staleTime: 20_000 }
+  );
+  const myMealsQ = trpc.foods.myMeals.useQuery(undefined, { staleTime: 20_000 });
   const historyQ = trpc.meals.history.useQuery(undefined, { staleTime: 30_000 });
   const foodsQ = trpc.foods.search.useQuery(
     { keyword: query.trim(), limit: 24 },
@@ -47,6 +53,9 @@ export default function FoodSearch({
     { enabled: query.trim().length > 0 }
   );
   const estimateM = trpc.meals.estimateByName.useMutation();
+  const createM = trpc.foods.createCustom.useMutation({
+    onSuccess: () => utils.foods.myFoods.invalidate(),
+  });
   const addM = trpc.meals.add.useMutation({
     onSuccess: () => {
       utils.meals.listByDate.invalidate({ date });
@@ -67,6 +76,23 @@ export default function FoodSearch({
       carbsG: Math.round(f.carbsG),
     });
     toast.success(`「${f.name}」を${MEAL_TYPE_LABELS[mealType]}に追加`);
+  };
+
+  const logMealItems = async (name: string, items: Food[]) => {
+    for (const f of items) {
+      await addM.mutateAsync({
+        date,
+        mealType,
+        description: f.name,
+        imageUrl: null,
+        calories: Math.round(f.calories),
+        proteinG: Math.round(f.proteinG),
+        fatG: Math.round(f.fatG),
+        carbsG: Math.round(f.carbsG),
+      });
+    }
+    toast.success(`「${name}」（${items.length}品）を${MEAL_TYPE_LABELS[mealType]}に追加`);
+    onClose();
   };
 
   const aiCalc = async () => {
@@ -116,6 +142,36 @@ export default function FoodSearch({
     );
   }
 
+  if (creating) {
+    return (
+      <CreateFoodForm
+        initialName={query.trim()}
+        saving={createM.isPending}
+        onBack={() => setCreating(false)}
+        onCreate={async (vals) => {
+          const created = await createM.mutateAsync(vals);
+          setCreating(false);
+          setDetail({
+            name: created.name,
+            calories: Number(created.calories),
+            proteinG: Number(created.proteinG),
+            fatG: Number(created.fatG),
+            carbsG: Number(created.carbsG),
+          });
+          toast.success(`「${created.name}」を作成しました`);
+        }}
+      />
+    );
+  }
+
+  // My Foods（自分で作成した食品）＝1食(servingLabel)あたり。人前で記録。
+  const myFoodResults: Food[] = (myFoodsQ.data ?? []).map((f) => ({
+    name: f.name,
+    calories: Number(f.calories),
+    proteinG: Number(f.proteinG),
+    fatG: Number(f.fatG),
+    carbsG: Number(f.carbsG),
+  }));
   // 基本食材（米・さつまいも等）＝グラム指定。代表値は defaultGrams 分で表示。
   const basicResults: Food[] = (foodsQ.data ?? []).map((f) => {
     const g = f.defaultGrams;
@@ -138,7 +194,7 @@ export default function FoodSearch({
     carbsG: Number(c.carbsG),
   }));
   const list: Food[] = query.trim()
-    ? [...basicResults, ...convResults]
+    ? [...myFoodResults, ...basicResults, ...convResults]
     : (historyQ.data ?? []).map((h) => ({
         name: h.name,
         calories: h.calories,
@@ -221,6 +277,49 @@ export default function FoodSearch({
               <div className="text-[11px] text-muted-foreground">リストに無い食べ物もカロリーを推定</div>
             </div>
           </button>
+        )}
+
+        {/* 自分で食品を作成 */}
+        <button
+          onClick={() => setCreating(true)}
+          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border border-dashed"
+          style={{ borderColor: "oklch(0.8 0.02 254)" }}
+        >
+          <PlusCircle className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
+          <div className="flex-1 text-left">
+            <div className="text-sm font-semibold text-foreground">
+              {query.trim() ? `「${query.trim()}」を自分の食品として作成` : "自分で食品を作成"}
+            </div>
+            <div className="text-[11px] text-muted-foreground">栄養成分を入力して、次から検索に出せます</div>
+          </div>
+        </button>
+
+        {/* Myミール（保存した食事セット）— 検索していない時 */}
+        {!query.trim() && (myMealsQ.data?.length ?? 0) > 0 && (
+          <div className="mb-3">
+            <div className="text-xs font-bold text-foreground mb-2 mt-1">Myミール</div>
+            <div className="space-y-2">
+              {myMealsQ.data!.map((m) => {
+                const total = m.items.reduce((a, it) => a + it.calories, 0);
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => logMealItems(m.name, m.items)}
+                    className="w-full flex items-center gap-3 rounded-xl px-4 py-3 bg-card border border-border text-left"
+                  >
+                    <UtensilsCrossed className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">{m.name}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {m.items.length}品 · 合計{Math.round(total)}kcal
+                      </div>
+                    </div>
+                    <Plus className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         <div className="text-xs font-bold text-foreground mb-2 mt-1">
@@ -402,6 +501,115 @@ function FoodDetail({
           {saving ? "記録中..." : `${MEAL_TYPE_LABELS[mealType]}に記録する`}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/* ── 自分で食品を作成（My Foods） ── */
+function CreateFoodForm({
+  initialName,
+  saving,
+  onBack,
+  onCreate,
+}: {
+  initialName: string;
+  saving: boolean;
+  onBack: () => void;
+  onCreate: (vals: {
+    name: string;
+    servingLabel: string;
+    calories: number;
+    proteinG: number;
+    fatG: number;
+    carbsG: number;
+  }) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [serving, setServing] = useState("1食");
+  const [kcal, setKcal] = useState("");
+  const [p, setP] = useState("");
+  const [f, setF] = useState("");
+  const [c, setC] = useState("");
+
+  const canSave = name.trim().length > 0 && Number(kcal) >= 0 && kcal !== "";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      <div className="flex items-center gap-2 px-3 py-3 border-b border-border bg-card">
+        <button onClick={onBack} className="tap-target -ml-1 text-muted-foreground">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <div className="flex-1 text-center font-bold text-base text-foreground">食品を作成</div>
+        <button
+          onClick={() =>
+            onCreate({
+              name: name.trim(),
+              servingLabel: serving.trim() || "1食",
+              calories: Number(kcal) || 0,
+              proteinG: Number(p) || 0,
+              fatG: Number(f) || 0,
+              carbsG: Number(c) || 0,
+            })
+          }
+          disabled={!canSave || saving}
+          className="text-sm font-bold px-2 disabled:opacity-40"
+          style={{ color: BLUE }}
+        >
+          {saving ? "..." : "保存"}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <Field label="食品名">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例：自家製プロテインバー" className="h-11" autoFocus />
+        </Field>
+        <Field label="1食の単位（分量の呼び方）">
+          <Input value={serving} onChange={(e) => setServing(e.target.value)} placeholder="例：1個 / 100g / 1杯" className="h-11" />
+        </Field>
+        <div className="rounded-xl px-4 py-3 bg-card border border-border">
+          <div className="text-xs text-muted-foreground mb-2">この1食あたりの栄養成分</div>
+          <Field label="カロリー (kcal)">
+            <Input inputMode="numeric" type="number" value={kcal} onChange={(e) => setKcal(e.target.value)} className="h-11" />
+          </Field>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <Field label="P (g)">
+              <Input inputMode="decimal" type="number" value={p} onChange={(e) => setP(e.target.value)} className="h-11" />
+            </Field>
+            <Field label="F (g)">
+              <Input inputMode="decimal" type="number" value={f} onChange={(e) => setF(e.target.value)} className="h-11" />
+            </Field>
+            <Field label="C (g)">
+              <Input inputMode="decimal" type="number" value={c} onChange={(e) => setC(e.target.value)} className="h-11" />
+            </Field>
+          </div>
+        </div>
+        <Button
+          onClick={() =>
+            onCreate({
+              name: name.trim(),
+              servingLabel: serving.trim() || "1食",
+              calories: Number(kcal) || 0,
+              proteinG: Number(p) || 0,
+              fatG: Number(f) || 0,
+              carbsG: Number(c) || 0,
+            })
+          }
+          disabled={!canSave || saving}
+          className="w-full h-12 font-bold rounded-xl"
+          style={{ background: BLUE }}
+        >
+          {saving ? "保存中..." : "保存して記録へ"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</label>
+      {children}
     </div>
   );
 }

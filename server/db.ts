@@ -22,6 +22,8 @@ import {
   workoutSets,
   InsertExercise,
   InsertWorkoutSet,
+  customFoods,
+  customMeals,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -709,4 +711,77 @@ export async function copyMealsFromDate(userId: number, fromDate: string, toDate
     }))
   );
   return rows.length;
+}
+
+/* ============================== custom foods (My Foods) ============================== */
+
+export async function addCustomFood(data: {
+  userId: number;
+  name: string;
+  brand?: string | null;
+  servingLabel: string;
+  calories: number;
+  proteinG: number;
+  fatG: number;
+  carbsG: number;
+}) {
+  const db = await requireDb();
+  const [row] = await db
+    .insert(customFoods)
+    .values({
+      userId: data.userId,
+      name: data.name,
+      brand: data.brand ?? null,
+      servingLabel: data.servingLabel,
+      calories: String(data.calories),
+      proteinG: String(data.proteinG),
+      fatG: String(data.fatG),
+      carbsG: String(data.carbsG),
+    })
+    .returning();
+  return row;
+}
+
+export async function listCustomFoods(userId: number, keyword?: string, limit = 50) {
+  const db = await requireDb();
+  const where = [eq(customFoods.userId, userId)];
+  if (keyword && keyword.trim()) {
+    where.push(like(customFoods.name, `%${keyword.trim()}%`));
+  }
+  return db
+    .select()
+    .from(customFoods)
+    .where(and(...where))
+    .orderBy(desc(customFoods.createdAt))
+    .limit(limit);
+}
+
+export async function deleteCustomFood(userId: number, id: number) {
+  const db = await requireDb();
+  await db.delete(customFoods).where(and(eq(customFoods.id, id), eq(customFoods.userId, userId)));
+}
+
+/* ============================== custom meals (My Meals) ============================== */
+
+export async function addCustomMeal(userId: number, name: string, items: unknown[]) {
+  const db = await requireDb();
+  const [row] = await db
+    .insert(customMeals)
+    .values({ userId, name, itemsJson: JSON.stringify(items) })
+    .returning();
+  return row;
+}
+
+export async function listCustomMeals(userId: number) {
+  const db = await requireDb();
+  return db
+    .select()
+    .from(customMeals)
+    .where(eq(customMeals.userId, userId))
+    .orderBy(desc(customMeals.createdAt));
+}
+
+export async function deleteCustomMeal(userId: number, id: number) {
+  const db = await requireDb();
+  await db.delete(customMeals).where(and(eq(customMeals.id, id), eq(customMeals.userId, userId)));
 }

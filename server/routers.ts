@@ -556,6 +556,72 @@ export const appRouter = router({
           defaultGrams: f.defaultGrams,
         }))
       ),
+
+    /* ── My Foods（自分で作成した食品） ── */
+    myFoods: protectedProcedure
+      .input(z.object({ keyword: z.string().max(60).optional() }).optional())
+      .query(({ ctx, input }) => db.listCustomFoods(ctx.user.id, input?.keyword)),
+
+    createCustom: protectedProcedure
+      .input(
+        z.object({
+          name: z.string().min(1).max(80),
+          brand: z.string().max(60).optional(),
+          servingLabel: z.string().min(1).max(40).default("1食"),
+          calories: z.number().min(0).max(9000),
+          proteinG: z.number().min(0).max(2000),
+          fatG: z.number().min(0).max(2000),
+          carbsG: z.number().min(0).max(2000),
+        })
+      )
+      .mutation(({ ctx, input }) => db.addCustomFood({ userId: ctx.user.id, ...input })),
+
+    deleteCustom: protectedProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteCustomFood(ctx.user.id, input.id);
+        return { ok: true };
+      }),
+
+    /* ── My Meals（自分の食事セット） ── */
+    myMeals: protectedProcedure.query(async ({ ctx }) => {
+      const rows = await db.listCustomMeals(ctx.user.id);
+      return rows.map((r) => {
+        let items: { name: string; calories: number; proteinG: number; fatG: number; carbsG: number }[] = [];
+        try {
+          items = JSON.parse(r.itemsJson);
+        } catch {
+          items = [];
+        }
+        return { id: r.id, name: r.name, items };
+      });
+    }),
+
+    saveMeal: protectedProcedure
+      .input(
+        z.object({
+          name: z.string().min(1).max(60),
+          items: z
+            .array(
+              z.object({
+                name: z.string().max(120),
+                calories: z.number(),
+                proteinG: z.number(),
+                fatG: z.number(),
+                carbsG: z.number(),
+              })
+            )
+            .min(1),
+        })
+      )
+      .mutation(({ ctx, input }) => db.addCustomMeal(ctx.user.id, input.name, input.items)),
+
+    deleteMeal: protectedProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteCustomMeal(ctx.user.id, input.id);
+        return { ok: true };
+      }),
   }),
 
   /* ============================== convenience ============================== */

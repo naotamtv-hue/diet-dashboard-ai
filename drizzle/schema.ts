@@ -259,3 +259,51 @@ export const workoutSets = sqliteTable(
 
 export type WorkoutSet = typeof workoutSets.$inferSelect;
 export type InsertWorkoutSet = typeof workoutSets.$inferInsert;
+
+/**
+ * ユーザー独自の食品（My Foods）。MyFitnessPalの「自分で食品を作成」に相当。
+ * 値は1食分（servingLabelで表す1単位）あたり。検索でヒットし人前(servings)で記録する。
+ */
+export const customFoods = sqliteTable(
+  "custom_foods",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    name: text("name").notNull(),
+    brand: text("brand"),
+    servingLabel: text("servingLabel").notNull().default("1食"),
+    calories: text("calories").notNull().default("0"),
+    proteinG: text("proteinG").notNull().default("0"),
+    fatG: text("fatG").notNull().default("0"),
+    carbsG: text("carbsG").notNull().default("0"),
+    createdAt: ts("createdAt"),
+  },
+  (t) => ({
+    userIdx: index("custom_foods_user_idx").on(t.userId),
+  })
+);
+
+export type CustomFood = typeof customFoods.$inferSelect;
+export type InsertCustomFood = typeof customFoods.$inferInsert;
+
+/**
+ * ユーザー独自の「食事セット」（My Meals）。MyFitnessPalの「My Meals」に相当。
+ * 複数の食品をまとめて1つの名前で保存し、ワンタップで全部記録する。
+ * itemsJson は [{name, calories, proteinG, fatG, carbsG}] のJSON配列。
+ */
+export const customMeals = sqliteTable(
+  "custom_meals",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    name: text("name").notNull(),
+    itemsJson: text("itemsJson").notNull().default("[]"),
+    createdAt: ts("createdAt"),
+  },
+  (t) => ({
+    userIdx: index("custom_meals_user_idx").on(t.userId),
+  })
+);
+
+export type CustomMeal = typeof customMeals.$inferSelect;
+export type InsertCustomMeal = typeof customMeals.$inferInsert;

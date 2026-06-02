@@ -136,9 +136,9 @@ function QuickCard({
         className="w-full text-left rounded-xl px-4 py-3.5 transition-all duration-150 active:scale-[0.97] hover:brightness-110"
         style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)", minHeight: "72px" }}
       >
-        <div className="flex items-center gap-2 mb-1" style={{ color: accent }}>
-          {icon}
-          <span className="text-sm font-semibold text-slate-900">{title}</span>
+        <div className="flex items-start gap-2 mb-1" style={{ color: accent }}>
+          <span className="flex-shrink-0 mt-0.5">{icon}</span>
+          <span className="text-sm font-semibold text-slate-900 leading-snug">{title}</span>
         </div>
         <div className="text-xs text-muted-foreground">{sub}</div>
       </button>
