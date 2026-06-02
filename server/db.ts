@@ -25,6 +25,8 @@ import {
   customFoods,
   customMeals,
   waterLogs,
+  aiUsage,
+  aiCache,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -840,4 +842,61 @@ export async function setWaterCups(userId: number, logDate: string, cups: number
     await db.insert(waterLogs).values({ userId, logDate, cups: safe });
   }
   return safe;
+}
+
+/* ============================== AI usage / cache（無料枠ガード） ============================== */
+
+/** その日のユーザーのAI利用回数を取得。 */
+export async function getAiUsageToday(userId: number, date: string): Promise<number> {
+  const db = await requireDb();
+  const [row] = await db
+    .select()
+    .from(aiUsage)
+    .where(and(eq(aiUsage.userId, userId), eq(aiUsage.usageDate, date)))
+    .limit(1);
+  return row?.count ?? 0;
+}
+
+/** その日の全ユーザー合計AI利用回数を取得（全体上限の判定用）。 */
+export async function getAiUsageGlobalToday(date: string): Promise<number> {
+  const db = await requireDb();
+  const rows = await db.select().from(aiUsage).where(eq(aiUsage.usageDate, date));
+  return rows.reduce((a, r) => a + (r.count ?? 0), 0);
+}
+
+/** ユーザーのその日のAI利用回数を1増やす（行が無ければ作成）。 */
+export async function incrementAiUsage(userId: number, date: string): Promise<void> {
+  const db = await requireDb();
+  const [row] = await db
+    .select()
+    .from(aiUsage)
+    .where(and(eq(aiUsage.userId, userId), eq(aiUsage.usageDate, date)))
+    .limit(1);
+  if (row) {
+    await db.update(aiUsage).set({ count: (row.count ?? 0) + 1 }).where(eq(aiUsage.id, row.id));
+  } else {
+    await db.insert(aiUsage).values({ userId, usageDate: date, count: 1 });
+  }
+}
+
+/** キャッシュ取得（ヒットすればパース済みオブジェクト、無ければ null）。 */
+export async function getAiCache<T = unknown>(key: string): Promise<T | null> {
+  const db = await requireDb();
+  const [row] = await db.select().from(aiCache).where(eq(aiCache.cacheKey, key)).limit(1);
+  if (!row) return null;
+  try {
+    return JSON.parse(row.resultJson) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** キャッシュ保存（既存キーは無視）。 */
+export async function setAiCache(key: string, value: unknown): Promise<void> {
+  const db = await requireDb();
+  try {
+    await db.insert(aiCache).values({ cacheKey: key, resultJson: JSON.stringify(value) });
+  } catch {
+    /* 既に同キーがあれば何もしない */
+  }
 }

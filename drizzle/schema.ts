@@ -326,3 +326,32 @@ export const waterLogs = sqliteTable(
 );
 
 export type WaterLog = typeof waterLogs.$inferSelect;
+
+/**
+ * AI利用量カウンタ（無料枠を守るため、ユーザー×日ごとのAI呼び出し回数を記録）。
+ */
+export const aiUsage = sqliteTable(
+  "ai_usage",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    usageDate: text("usageDate").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => ({
+    userDateIdx: index("ai_usage_user_date_idx").on(t.userId, t.usageDate),
+  })
+);
+
+/**
+ * AI結果キャッシュ（同じ問い合わせ＝食品名などは結果を全ユーザーで使い回し、重複呼び出しを防ぐ）。
+ */
+export const aiCache = sqliteTable(
+  "ai_cache",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    cacheKey: text("cacheKey").notNull().unique(),
+    resultJson: text("resultJson").notNull(),
+    createdAt: ts("createdAt"),
+  }
+);

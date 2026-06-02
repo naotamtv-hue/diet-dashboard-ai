@@ -20,6 +20,35 @@ const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD形式で指定してください");
 
+/* ── 無料枠ガード：AI呼び出しの1日上限（ユーザー単位＋全体）。envで調整可。 ── */
+const AI_DAILY_PER_USER = Number(process.env.AI_DAILY_PER_USER ?? 15);
+const AI_DAILY_GLOBAL = Number(process.env.AI_DAILY_GLOBAL ?? 250);
+
+function serverToday(): string {
+  // 日本時間(UTC+9)基準で日付を出す（無料枠リセットの体感を日本の1日に合わせる）。
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+/** AI呼び出し前のチェック。上限超過なら手入力へ誘導するエラーを投げる。 */
+async function checkAiQuota(userId: number): Promise<string> {
+  const today = serverToday();
+  const globalUsed = await db.getAiUsageGlobalToday(today);
+  if (globalUsed >= AI_DAILY_GLOBAL) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "本日のAI利用が混み合っています。手入力やグラム入力で記録できます🙏",
+    });
+  }
+  const userUsed = await db.getAiUsageToday(userId, today);
+  if (userUsed >= AI_DAILY_PER_USER) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: `本日のAI利用上限（${AI_DAILY_PER_USER}回）に達しました。手入力やグラム入力で記録できます🙏`,
+    });
+  }
+  return today;
+}
+
 const mealTypeSchema = z.enum(["breakfast", "lunch", "dinner", "snack"]);
 const chainSchema = z.enum(["seven", "familymart", "lawson"]);
 const categorySchema = z.enum([
@@ -180,28 +209,39 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const today = await checkAiQuota(ctx.user.id);
         const { url } = await uploadDataUrl(ctx.user.id, input.imageDataUrl, "meals");
         const origin = `${ctx.req.protocol}://${ctx.req.headers.host}`;
         const absolute = url.startsWith("http") ? url : `${origin}${url}`;
         const result = await analyzeMealImage(absolute);
+        await db.incrementAiUsage(ctx.user.id, today);
         return { imageUrl: url, analysis: result };
       }),
 
     analyzePackage: protectedProcedure
       .input(z.object({ imageDataUrl: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
+        const today = await checkAiQuota(ctx.user.id);
         const { url } = await uploadDataUrl(ctx.user.id, input.imageDataUrl, "meals");
         const origin = `${ctx.req.protocol}://${ctx.req.headers.host}`;
         const absolute = url.startsWith("http") ? url : `${origin}${url}`;
         const result = await analyzePackageImage(absolute);
+        await db.incrementAiUsage(ctx.user.id, today);
         return { imageUrl: url, analysis: result };
       }),
 
     estimateByName: protectedProcedure
       .input(z.object({ query: z.string().trim().min(1).max(100) }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        // キャッシュ優先（同じ食品名は全ユーザーで使い回し＝AI呼び出し・上限消費なし）
+        const cacheKey = `name:${input.query.trim().toLowerCase()}`;
+        const cached = await db.getAiCache<{ description: string; calories: number; proteinG: number; fatG: number; carbsG: number; confidence: string }>(cacheKey);
+        if (cached) return { analysis: cached, cached: true };
+        const today = await checkAiQuota(ctx.user.id);
         const analysis = await estimateMealByName(input.query);
-        return { analysis };
+        await db.incrementAiUsage(ctx.user.id, today);
+        if (analysis.calories > 0) await db.setAiCache(cacheKey, analysis);
+        return { analysis, cached: false };
       }),
 
     add: protectedProcedure
@@ -708,7 +748,9 @@ export const appRouter = router({
           note: z.string().max(200).optional(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const comboToday = await checkAiQuota(ctx.user.id);
+        await db.incrementAiUsage(ctx.user.id, comboToday);
         const all = await db.searchConvenienceItems({
           chain: input.preferredChain === "any" ? undefined : input.preferredChain,
           maxKcal: input.remainingCalories,
@@ -745,6 +787,8 @@ export const appRouter = router({
         if (!goal) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "先に目標を設定してください" });
         }
+        const planToday = await checkAiQuota(ctx.user.id);
+        await db.incrementAiUsage(ctx.user.id, planToday);
         // 実在のコンビニ商品を候補として渡し、conveniencePlanのハルシネーションを防ぐ。
         // 低脂質・高タンパク優先で並べ、上限80件まで。
         const items = await db.searchConvenienceItems({ limit: 200 });
@@ -834,6 +878,8 @@ export const appRouter = router({
             message: "先に目標を設定してください",
           });
         }
+        const trainerToday = await checkAiQuota(ctx.user.id);
+        await db.incrementAiUsage(ctx.user.id, trainerToday);
         return buildTrainerPlan({
           gender: goal.gender,
           age: goal.age,
