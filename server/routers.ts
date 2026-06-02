@@ -172,6 +172,18 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const email = input.email.trim().toLowerCase();
         const user = await db.getUserByEmail(email);
+        // Manus移行アカウント(Googleログイン由来・パスワード未設定)の初回ログインは
+        // 入力されたパスワードを設定する「claim」として扱い、そのままログインさせる。
+        if (user && !user.passwordHash) {
+          const claimed = await db.setUserPassword(
+            user.id,
+            await hashPassword(input.password),
+            user.name || email.split("@")[0]
+          );
+          const u = claimed ?? user;
+          await issueSession(ctx, u);
+          return publicUser(u);
+        }
         if (!user || !user.passwordHash || !(await verifyPassword(input.password, user.passwordHash))) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
