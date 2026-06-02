@@ -159,11 +159,6 @@ export default function Dashboard() {
   const streakQ = trpc.stats.streak.useQuery({ today });
   const weeklyQ = trpc.stats.weeklyReview.useQuery({ today });
   const weightsListQ = trpc.weights.list.useQuery();
-  const adviceQ = trpc.coach.dailyAdvice.useQuery(
-    { today },
-    { staleTime: 1000 * 60 * 30, refetchOnWindowFocus: false, retry: false, enabled: !!goalQ.data }
-  );
-
   const goal = goalQ.data;
   const summary = summaryQ.data;
   const latestWeight = weightLatestQ.data;
@@ -246,27 +241,6 @@ export default function Dashboard() {
               設定する
             </Button>
           </Link>
-        </div>
-      )}
-
-      {/* ── 今日のひとことアドバイス ── */}
-      {(adviceQ.data?.advice || adviceQ.isLoading) && (
-        <div
-          className="rounded-xl px-4 py-4 space-y-3"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
-        >
-          {adviceQ.isLoading && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Sparkles className="h-4 w-4 animate-pulse" style={{ color: "oklch(0.68 0.14 290)" }} />
-              <span className="text-xs">今日のアドバイスを考えています…</span>
-            </div>
-          )}
-          {adviceQ.data?.advice && (
-            <div className="flex items-start gap-2">
-              <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.68 0.14 290)" }} />
-              <p className="text-sm text-slate-900 leading-relaxed">{adviceQ.data.advice}</p>
-            </div>
-          )}
         </div>
       )}
 
