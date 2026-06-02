@@ -14,6 +14,7 @@ import * as db from "./db";
 import { storagePut } from "./storage";
 import { analyzeMealImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
 import { buildPlan, suggestPfcTargets } from "./nutrition";
+import { searchBasicFoods } from "./basic-foods";
 
 const dateStringSchema = z
   .string()
@@ -541,6 +542,20 @@ export const appRouter = router({
         const pfc = suggestPfcTargets(plan.targetCalories, input.currentWeightKg);
         return { ...plan, pfc };
       }),
+  }),
+
+  /* ============================== basic foods ============================== */
+  foods: router({
+    search: protectedProcedure
+      .input(z.object({ keyword: z.string().max(60).optional(), limit: z.number().int().min(1).max(50).optional() }))
+      .query(({ input }) =>
+        searchBasicFoods(input.keyword, input.limit ?? 30).map((f) => ({
+          name: f.name,
+          category: f.category,
+          per100: f.per100,
+          defaultGrams: f.defaultGrams,
+        }))
+      ),
   }),
 
   /* ============================== convenience ============================== */

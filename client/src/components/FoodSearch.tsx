@@ -9,7 +9,17 @@ import { toast } from "sonner";
 const BLUE = "oklch(0.58 0.19 254)";
 
 type MealType = (typeof MEAL_TYPES)[number];
-type Food = { name: string; calories: number; proteinG: number; fatG: number; carbsG: number };
+type Per100 = { kcal: number; p: number; f: number; c: number };
+// per100 を持つ食材は「グラム指定」、持たないもの（コンビニ・履歴）は「人前」で記録する。
+type Food = {
+  name: string;
+  calories: number;
+  proteinG: number;
+  fatG: number;
+  carbsG: number;
+  per100?: Per100;
+  defaultGrams?: number;
+};
 
 export default function FoodSearch({
   date,
@@ -26,8 +36,12 @@ export default function FoodSearch({
   const [detail, setDetail] = useState<Food | null>(null);
 
   const historyQ = trpc.meals.history.useQuery(undefined, { staleTime: 30_000 });
+  const foodsQ = trpc.foods.search.useQuery(
+    { keyword: query.trim(), limit: 24 },
+    { enabled: query.trim().length > 0 }
+  );
   const searchQ = trpc.convenience.search.useQuery(
-    { keyword: query.trim(), limit: 40 },
+    { keyword: query.trim(), limit: 30 },
     { enabled: query.trim().length > 0 }
   );
   const estimateM = trpc.meals.estimateByName.useMutation();
@@ -85,6 +99,20 @@ export default function FoodSearch({
     );
   }
 
+  // 基本食材（米・さつまいも等）＝グラム指定。代表値は defaultGrams 分で表示。
+  const basicResults: Food[] = (foodsQ.data ?? []).map((f) => {
+    const g = f.defaultGrams;
+    const k = g / 100;
+    return {
+      name: f.name,
+      calories: f.per100.kcal * k,
+      proteinG: f.per100.p * k,
+      fatG: f.per100.f * k,
+      carbsG: f.per100.c * k,
+      per100: f.per100,
+      defaultGrams: g,
+    };
+  });
   const convResults: Food[] = (searchQ.data ?? []).map((c) => ({
     name: c.name,
     calories: Number(c.calories),
@@ -93,7 +121,7 @@ export default function FoodSearch({
     carbsG: Number(c.carbsG),
   }));
   const list: Food[] = query.trim()
-    ? convResults
+    ? [...basicResults, ...convResults]
     : (historyQ.data ?? []).map((h) => ({
         name: h.name,
         calories: h.calories,
@@ -214,15 +242,27 @@ function FoodDetail({
   saving: boolean;
   onSave: (f: Food) => void;
 }) {
+  const gramMode = !!food.per100;
   const [mult, setMult] = useState(1);
-  const scaled: Food = {
-    name: food.name,
-    calories: food.calories * mult,
-    proteinG: food.proteinG * mult,
-    fatG: food.fatG * mult,
-    carbsG: food.carbsG * mult,
-  };
+  const [grams, setGrams] = useState(food.defaultGrams ?? 100);
+
+  const scaled: Food = gramMode
+    ? {
+        name: food.name,
+        calories: food.per100!.kcal * (grams / 100),
+        proteinG: food.per100!.p * (grams / 100),
+        fatG: food.per100!.f * (grams / 100),
+        carbsG: food.per100!.c * (grams / 100),
+      }
+    : {
+        name: food.name,
+        calories: food.calories * mult,
+        proteinG: food.proteinG * mult,
+        fatG: food.fatG * mult,
+        carbsG: food.carbsG * mult,
+      };
   const setM = (v: number) => setMult(Math.max(0.25, Math.round(v * 4) / 4));
+  const setG = (v: number) => setGrams(Math.max(5, Math.min(2000, Math.round(v / 5) * 5)));
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
@@ -252,18 +292,56 @@ function FoodDetail({
         </div>
 
         {/* 分量 */}
-        <div className="flex items-center justify-between rounded-xl px-4 py-3 bg-card border border-border">
-          <span className="text-sm text-muted-foreground">分量（人前）</span>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setM(mult - 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
-              <Minus className="h-4 w-4" />
-            </button>
-            <span className="text-lg font-bold text-foreground w-10 text-center tabular-nums">{mult}</span>
-            <button onClick={() => setM(mult + 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
-              <Plus className="h-4 w-4" />
-            </button>
+        {gramMode ? (
+          <div className="rounded-xl px-4 py-3 bg-card border border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">分量（グラム）</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setG(grams - 10)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                  <Minus className="h-4 w-4" />
+                </button>
+                <div className="flex items-baseline gap-0.5 w-[72px] justify-center">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={grams}
+                    onChange={(e) => setGrams(Math.max(5, Math.min(2000, Number(e.target.value) || 0)))}
+                    className="w-12 text-lg font-bold text-foreground text-right bg-transparent outline-none tabular-nums"
+                  />
+                  <span className="text-sm text-muted-foreground">g</span>
+                </div>
+                <button onClick={() => setG(grams + 10)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-1.5">
+              {[50, 100, 150, 200].map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setGrams(g)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-semibold border"
+                  style={grams === g ? { background: BLUE, color: "white", borderColor: BLUE } : { color: BLUE, borderColor: "oklch(0.9 0.02 254)" }}
+                >
+                  {g}g
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl px-4 py-3 bg-card border border-border">
+            <span className="text-sm text-muted-foreground">分量（人前）</span>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setM(mult - 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="text-lg font-bold text-foreground w-10 text-center tabular-nums">{mult}</span>
+              <button onClick={() => setM(mult + 0.25)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* カロリー＆PFC */}
         <div className="rounded-xl px-4 py-5 bg-card border border-border text-center">
