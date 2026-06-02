@@ -18,6 +18,9 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22.12.0"
+      # セッションJWTのappId。空だと全セッションが無効化されるため必須。
+      - key: VITE_APP_ID
+        value: diet-dashboard-ai
       # Turso の DB URL (libsql://...) — ダッシュボードで入力
       - key: DATABASE_URL
         sync: false
