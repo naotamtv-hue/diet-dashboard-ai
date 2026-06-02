@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl } from "@/lib/labels";
-import { Camera, ChevronLeft, Plus, PlusCircle, ScanLine, Search, Sparkles, Star, Loader2, Minus, UtensilsCrossed } from "lucide-react";
+import { Camera, ChevronLeft, Pencil, Plus, PlusCircle, ScanLine, Search, Sparkles, Star, Loader2, Minus, Trash2, UtensilsCrossed } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -25,16 +25,23 @@ export default function FoodSearch({
   date,
   initialMealType,
   onClose,
+  onPick,
+  pickTitle,
 }: {
   date: string;
   initialMealType: MealType;
   onClose: () => void;
+  // 指定すると「選んで返す」ピックモードになる（日記には記録せず、選んだ食品を返す）。
+  onPick?: (f: Food) => void;
+  pickTitle?: string;
 }) {
+  const pickMode = !!onPick;
   const utils = trpc.useUtils();
   const [mealType, setMealType] = useState<MealType>(initialMealType);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<Food | null>(null);
   const [creating, setCreating] = useState(false);
+  const [building, setBuilding] = useState<{ id?: number; name: string; items: Food[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const packageRef = useRef<HTMLInputElement>(null);
   const analyzeM = trpc.meals.analyzePhoto.useMutation();
@@ -58,6 +65,9 @@ export default function FoodSearch({
   const createM = trpc.foods.createCustom.useMutation({
     onSuccess: () => utils.foods.myFoods.invalidate(),
   });
+  const saveMealM = trpc.foods.saveMeal.useMutation({ onSuccess: () => utils.foods.myMeals.invalidate() });
+  const updateMealM = trpc.foods.updateMeal.useMutation({ onSuccess: () => utils.foods.myMeals.invalidate() });
+  const deleteMealM = trpc.foods.deleteMeal.useMutation({ onSuccess: () => utils.foods.myMeals.invalidate() });
   const addM = trpc.meals.add.useMutation({
     onSuccess: () => {
       utils.meals.listByDate.invalidate({ date });
@@ -67,6 +77,17 @@ export default function FoodSearch({
   });
 
   const quickAdd = async (f: Food) => {
+    if (pickMode) {
+      onPick!({
+        name: f.name,
+        calories: Math.round(f.calories),
+        proteinG: Math.round(f.proteinG),
+        fatG: Math.round(f.fatG),
+        carbsG: Math.round(f.carbsG),
+      });
+      onClose();
+      return;
+    }
     await addM.mutateAsync({
       date,
       mealType,
@@ -167,7 +188,8 @@ export default function FoodSearch({
         onBack={() => setDetail(null)}
         saving={addM.isPending}
         favoriting={createM.isPending}
-        onFavorite={favoriteFood}
+        onFavorite={pickMode ? undefined : favoriteFood}
+        confirmLabel={pickMode ? "追加" : undefined}
         onSave={async (f) => {
           await quickAdd(f);
           onClose();
@@ -194,6 +216,37 @@ export default function FoodSearch({
           });
           toast.success(`「${created.name}」を作成しました`);
         }}
+      />
+    );
+  }
+
+  if (building && !pickMode) {
+    return (
+      <MealBuilder
+        date={date}
+        initialMealType={mealType}
+        initial={building}
+        saving={saveMealM.isPending || updateMealM.isPending}
+        onClose={() => setBuilding(null)}
+        onSave={async (name, items, id) => {
+          if (id) {
+            await updateMealM.mutateAsync({ id, name, items });
+            toast.success(`「${name}」を更新しました`);
+          } else {
+            await saveMealM.mutateAsync({ name, items });
+            toast.success(`「${name}」をMyミールに保存しました`);
+          }
+          setBuilding(null);
+        }}
+        onDelete={
+          building.id
+            ? async () => {
+                await deleteMealM.mutateAsync({ id: building.id! });
+                toast.success("削除しました");
+                setBuilding(null);
+              }
+            : undefined
+        }
       />
     );
   }
@@ -244,16 +297,20 @@ export default function FoodSearch({
         <button onClick={onClose} className="tap-target -ml-1 text-muted-foreground">
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <select
-          value={mealType}
-          onChange={(e) => setMealType(e.target.value as MealType)}
-          className="flex-1 text-center font-bold text-base bg-transparent outline-none"
-          style={{ color: BLUE }}
-        >
-          {MEAL_TYPES.map((t) => (
-            <option key={t} value={t}>{MEAL_TYPE_LABELS[t]}</option>
-          ))}
-        </select>
+        {pickMode ? (
+          <div className="flex-1 text-center font-bold text-base text-foreground">{pickTitle ?? "食品を選ぶ"}</div>
+        ) : (
+          <select
+            value={mealType}
+            onChange={(e) => setMealType(e.target.value as MealType)}
+            className="flex-1 text-center font-bold text-base bg-transparent outline-none"
+            style={{ color: BLUE }}
+          >
+            {MEAL_TYPES.map((t) => (
+              <option key={t} value={t}>{MEAL_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+        )}
         <div className="w-6" />
       </div>
 
@@ -313,78 +370,110 @@ export default function FoodSearch({
           </button>
         )}
 
-        {/* パッケージ/栄養成分表示から登録 */}
-        <input
-          ref={packageRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) analyzePackage(f);
-            e.target.value = "";
-          }}
-        />
-        <button
-          onClick={() => packageRef.current?.click()}
-          disabled={packageM.isPending}
-          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border"
-          style={{ borderColor: "oklch(0.72 0.18 155)" }}
-        >
-          {packageM.isPending ? (
-            <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
-          ) : (
-            <ScanLine className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
-          )}
-          <div className="flex-1 text-left">
-            <div className="text-sm font-semibold" style={{ color: "oklch(0.5 0.14 155)" }}>
-              {packageM.isPending ? "成分表示を読み取り中..." : "パッケージの栄養成分表示から登録"}
-            </div>
-            <div className="text-[11px] text-muted-foreground">商品の成分表示を撮影 → 自動で栄養を入力</div>
-          </div>
-        </button>
+        {/* パッケージ/栄養成分表示から登録（ピックモードでは非表示） */}
+        {!pickMode && (
+          <>
+            <input
+              ref={packageRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) analyzePackage(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              onClick={() => packageRef.current?.click()}
+              disabled={packageM.isPending}
+              className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border"
+              style={{ borderColor: "oklch(0.72 0.18 155)" }}
+            >
+              {packageM.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
+              ) : (
+                <ScanLine className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.6 0.16 155)" }} />
+              )}
+              <div className="flex-1 text-left">
+                <div className="text-sm font-semibold" style={{ color: "oklch(0.5 0.14 155)" }}>
+                  {packageM.isPending ? "成分表示を読み取り中..." : "パッケージの栄養成分表示から登録"}
+                </div>
+                <div className="text-[11px] text-muted-foreground">商品の成分表示を撮影 → 自動で栄養を入力</div>
+              </div>
+            </button>
 
-        {/* 自分で食品を作成 */}
-        <button
-          onClick={() => setCreating(true)}
-          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border border-dashed"
-          style={{ borderColor: "oklch(0.8 0.02 254)" }}
-        >
-          <PlusCircle className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
-          <div className="flex-1 text-left">
-            <div className="text-sm font-semibold text-foreground">
-              {query.trim() ? `「${query.trim()}」を自分の食品として作成` : "自分で食品を作成"}
-            </div>
-            <div className="text-[11px] text-muted-foreground">栄養成分を入力して、次から検索に出せます</div>
-          </div>
-        </button>
+            {/* 自分で食品を作成 */}
+            <button
+              onClick={() => setCreating(true)}
+              className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border border-dashed"
+              style={{ borderColor: "oklch(0.8 0.02 254)" }}
+            >
+              <PlusCircle className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
+              <div className="flex-1 text-left">
+                <div className="text-sm font-semibold text-foreground">
+                  {query.trim() ? `「${query.trim()}」を自分の食品として作成` : "自分で食品を作成"}
+                </div>
+                <div className="text-[11px] text-muted-foreground">栄養成分を入力して、次から検索に出せます</div>
+              </div>
+            </button>
 
-        {/* Myミール（保存した食事セット）— 検索していない時 */}
-        {!query.trim() && (myMealsQ.data?.length ?? 0) > 0 && (
-          <div className="mb-3">
-            <div className="text-xs font-bold text-foreground mb-2 mt-1">Myミール</div>
-            <div className="space-y-2">
-              {myMealsQ.data!.map((m) => {
-                const total = m.items.reduce((a, it) => a + it.calories, 0);
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => logMealItems(m.name, m.items)}
-                    className="w-full flex items-center gap-3 rounded-xl px-4 py-3 bg-card border border-border text-left"
-                  >
-                    <UtensilsCrossed className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-foreground truncate">{m.name}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {m.items.length}品 · 合計{Math.round(total)}kcal
+            {/* Myミール/パッケージを作成 */}
+            <button
+              onClick={() => setBuilding({ name: "", items: [] })}
+              className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-2 bg-card border border-dashed"
+              style={{ borderColor: "oklch(0.78 0.1 75)" }}
+            >
+              <UtensilsCrossed className="h-5 w-5 flex-shrink-0" style={{ color: "oklch(0.66 0.15 60)" }} />
+              <div className="flex-1 text-left">
+                <div className="text-sm font-semibold text-foreground">Myミール（パッケージ）を作成</div>
+                <div className="text-[11px] text-muted-foreground">卵・納豆・白米など複数をまとめて1つに。分量調整・編集OK</div>
+              </div>
+            </button>
+
+            {/* Myミール（保存した食事セット）— 検索していない時 */}
+            {!query.trim() && (myMealsQ.data?.length ?? 0) > 0 && (
+              <div className="mb-3">
+                <div className="text-xs font-bold text-foreground mb-2 mt-1">Myミール</div>
+                <div className="space-y-2">
+                  {myMealsQ.data!.map((m) => {
+                    const total = m.items.reduce((a, it) => a + it.calories, 0);
+                    return (
+                      <div
+                        key={m.id}
+                        className="w-full flex items-center gap-2 rounded-xl px-4 py-3 bg-card border border-border"
+                      >
+                        <button onClick={() => logMealItems(m.name, m.items)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                          <UtensilsCrossed className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-foreground truncate">{m.name}</div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              {m.items.length}品 · 合計{Math.round(total)}kcal
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setBuilding({ id: m.id, name: m.name, items: m.items })}
+                          className="tap-target text-muted-foreground flex-shrink-0"
+                          aria-label="編集"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => logMealItems(m.name, m.items)}
+                          className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+                          style={{ background: "oklch(0.95 0.02 254)", color: BLUE }}
+                          aria-label="追加"
+                        >
+                          <Plus className="h-5 w-5" />
+                        </button>
                       </div>
-                    </div>
-                    <Plus className="h-5 w-5 flex-shrink-0" style={{ color: BLUE }} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <div className="text-xs font-bold text-foreground mb-2 mt-1">
@@ -437,6 +526,7 @@ function FoodDetail({
   onSave,
   favoriting,
   onFavorite,
+  confirmLabel,
 }: {
   food: Food;
   mealType: MealType;
@@ -446,6 +536,7 @@ function FoodDetail({
   onSave: (f: Food) => void;
   favoriting?: boolean;
   onFavorite?: (f: Food) => void;
+  confirmLabel?: string;
 }) {
   const [faved, setFaved] = useState(false);
   const gramMode = !!food.per100;
@@ -493,7 +584,7 @@ function FoodDetail({
           </button>
         )}
         <button onClick={() => onSave(scaled)} disabled={saving} className="text-sm font-bold px-2" style={{ color: BLUE }}>
-          {saving ? "..." : "記録"}
+          {saving ? "..." : confirmLabel ?? "記録"}
         </button>
       </div>
 
@@ -583,7 +674,7 @@ function FoodDetail({
         </div>
 
         <Button onClick={() => onSave(scaled)} disabled={saving} className="w-full h-12 font-bold rounded-xl" style={{ background: BLUE }}>
-          {saving ? "記録中..." : `${MEAL_TYPE_LABELS[mealType]}に記録する`}
+          {saving ? "..." : confirmLabel ? `Myミールに${confirmLabel}` : `${MEAL_TYPE_LABELS[mealType]}に記録する`}
         </Button>
       </div>
     </div>
@@ -695,6 +786,156 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1.5">
       <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</label>
       {children}
+    </div>
+  );
+}
+
+/* ── Myミール（パッケージ）ビルダー：複数食品を分量調整して1つに保存・編集 ── */
+function MealBuilder({
+  date,
+  initialMealType,
+  initial,
+  saving,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  date: string;
+  initialMealType: MealType;
+  initial: { id?: number; name: string; items: Food[] };
+  saving: boolean;
+  onClose: () => void;
+  onSave: (name: string, items: Food[], id?: number) => void;
+  onDelete?: () => void;
+}) {
+  const [name, setName] = useState(initial.name);
+  // 各要素は base(基準値) × qty(数量) で調整可能にする。
+  const [items, setItems] = useState<{ base: Food; qty: number }[]>(
+    initial.items.map((f) => ({ base: f, qty: 1 }))
+  );
+  const [picking, setPicking] = useState(false);
+
+  const scaledItems: Food[] = items.map(({ base, qty }) => ({
+    name: base.name,
+    calories: base.calories * qty,
+    proteinG: base.proteinG * qty,
+    fatG: base.fatG * qty,
+    carbsG: base.carbsG * qty,
+  }));
+  const total = scaledItems.reduce(
+    (a, f) => ({ kcal: a.kcal + f.calories, p: a.p + f.proteinG, fat: a.fat + f.fatG, c: a.c + f.carbsG }),
+    { kcal: 0, p: 0, fat: 0, c: 0 }
+  );
+  const setQty = (i: number, q: number) =>
+    setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, qty: Math.max(0.5, Math.round(q * 2) / 2) } : it)));
+  const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
+
+  if (picking) {
+    return (
+      <FoodSearch
+        date={date}
+        initialMealType={initialMealType}
+        pickTitle="ミールに追加する食品"
+        onClose={() => setPicking(false)}
+        onPick={(f) => {
+          setItems((prev) => [...prev, { base: f, qty: 1 }]);
+          setPicking(false);
+        }}
+      />
+    );
+  }
+
+  const canSave = name.trim().length > 0 && items.length > 0;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      <div className="flex items-center gap-2 px-3 py-3 border-b border-border bg-card">
+        <button onClick={onClose} className="tap-target -ml-1 text-muted-foreground">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+        <div className="flex-1 text-center font-bold text-base text-foreground">
+          {initial.id ? "Myミールを編集" : "Myミールを作成"}
+        </div>
+        <button
+          onClick={() => onSave(name.trim(), scaledItems.map((f) => ({
+            name: f.name,
+            calories: Math.round(f.calories),
+            proteinG: Math.round(f.proteinG),
+            fatG: Math.round(f.fatG),
+            carbsG: Math.round(f.carbsG),
+          })), initial.id)}
+          disabled={!canSave || saving}
+          className="text-sm font-bold px-2 disabled:opacity-40"
+          style={{ color: BLUE }}
+        >
+          {saving ? "..." : "保存"}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* ミール名 */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">ミール名</label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例：いつもの朝ごはん" className="h-11" autoFocus={!initial.id} />
+        </div>
+
+        {/* 合計 */}
+        <div className="rounded-xl px-4 py-3 bg-card border border-border flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">合計</span>
+          <span className="text-sm font-bold text-foreground">
+            {Math.round(total.kcal)}kcal
+            <span className="text-muted-foreground font-normal ml-2">P{Math.round(total.p)} / F{Math.round(total.fat)} / C{Math.round(total.c)}</span>
+          </span>
+        </div>
+
+        {/* 中身 */}
+        <div className="space-y-2">
+          {items.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">「食品を追加」で中身を組み立てます</div>
+          ) : (
+            items.map((it, i) => (
+              <div key={i} className="rounded-xl px-3 py-3 bg-card border border-border">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">{it.base.name}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {Math.round(it.base.calories * it.qty)}kcal · P{Math.round(it.base.proteinG * it.qty)} / F{Math.round(it.base.fatG * it.qty)} / C{Math.round(it.base.carbsG * it.qty)}
+                    </div>
+                  </div>
+                  <button onClick={() => removeItem(i)} className="tap-target text-muted-foreground flex-shrink-0" aria-label="削除">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-[11px] text-muted-foreground">数量</span>
+                  <button onClick={() => setQty(i, it.qty - 0.5)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="text-sm font-bold text-foreground w-8 text-center tabular-nums">{it.qty}</span>
+                  <button onClick={() => setQty(i, it.qty + 0.5)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "oklch(0.95 0.01 254)", color: BLUE }}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* 食品を追加 */}
+        <button
+          onClick={() => setPicking(true)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+          style={{ background: "oklch(0.95 0.02 254)", color: BLUE }}
+        >
+          <Plus className="h-4 w-4" /> 食品を追加
+        </button>
+
+        {initial.id && onDelete && (
+          <button onClick={onDelete} disabled={saving} className="w-full text-center text-sm text-destructive py-2">
+            このMyミールを削除
+          </button>
+        )}
+      </div>
     </div>
   );
 }

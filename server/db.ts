@@ -782,6 +782,14 @@ export async function listCustomMeals(userId: number) {
     .orderBy(desc(customMeals.createdAt));
 }
 
+export async function updateCustomMeal(userId: number, id: number, name: string, items: unknown[]) {
+  const db = await requireDb();
+  await db
+    .update(customMeals)
+    .set({ name, itemsJson: JSON.stringify(items) })
+    .where(and(eq(customMeals.id, id), eq(customMeals.userId, userId)));
+}
+
 export async function deleteCustomMeal(userId: number, id: number) {
   const db = await requireDb();
   await db.delete(customMeals).where(and(eq(customMeals.id, id), eq(customMeals.userId, userId)));

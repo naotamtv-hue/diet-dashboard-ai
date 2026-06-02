@@ -626,6 +626,29 @@ export const appRouter = router({
       )
       .mutation(({ ctx, input }) => db.addCustomMeal(ctx.user.id, input.name, input.items)),
 
+    updateMeal: protectedProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          name: z.string().min(1).max(60),
+          items: z
+            .array(
+              z.object({
+                name: z.string().max(120),
+                calories: z.number(),
+                proteinG: z.number(),
+                fatG: z.number(),
+                carbsG: z.number(),
+              })
+            )
+            .min(1),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await db.updateCustomMeal(ctx.user.id, input.id, input.name, input.items);
+        return { ok: true };
+      }),
+
     deleteMeal: protectedProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
