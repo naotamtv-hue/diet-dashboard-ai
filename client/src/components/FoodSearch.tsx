@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl } from "@/lib/labels";
-import { Camera, ChevronLeft, Plus, PlusCircle, Search, Sparkles, Loader2, Minus, UtensilsCrossed } from "lucide-react";
+import { Camera, ChevronLeft, Plus, PlusCircle, Search, Sparkles, Star, Loader2, Minus, UtensilsCrossed } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -126,6 +126,21 @@ export default function FoodSearch({
     }
   };
 
+  const favoriteFood = async (f: Food) => {
+    // 表示中の食品を「自分の食品(お気に入り)」として保存。
+    // グラム食品は基準グラムを、それ以外は1食を単位にする。
+    const servingLabel = f.per100 ? `${f.defaultGrams ?? 100}g` : "1食";
+    await createM.mutateAsync({
+      name: f.name,
+      servingLabel,
+      calories: Math.round(f.calories),
+      proteinG: Math.round(f.proteinG),
+      fatG: Math.round(f.fatG),
+      carbsG: Math.round(f.carbsG),
+    });
+    toast.success(`「${f.name}」をお気に入りに登録しました`);
+  };
+
   if (detail) {
     return (
       <FoodDetail
@@ -134,6 +149,8 @@ export default function FoodSearch({
         onMealType={setMealType}
         onBack={() => setDetail(null)}
         saving={addM.isPending}
+        favoriting={createM.isPending}
+        onFavorite={favoriteFood}
         onSave={async (f) => {
           await quickAdd(f);
           onClose();
@@ -370,6 +387,8 @@ function FoodDetail({
   onBack,
   saving,
   onSave,
+  favoriting,
+  onFavorite,
 }: {
   food: Food;
   mealType: MealType;
@@ -377,7 +396,10 @@ function FoodDetail({
   onBack: () => void;
   saving: boolean;
   onSave: (f: Food) => void;
+  favoriting?: boolean;
+  onFavorite?: (f: Food) => void;
 }) {
+  const [faved, setFaved] = useState(false);
   const gramMode = !!food.per100;
   const [mult, setMult] = useState(1);
   const [grams, setGrams] = useState(food.defaultGrams ?? 100);
@@ -407,6 +429,21 @@ function FoodDetail({
           <ChevronLeft className="h-6 w-6" />
         </button>
         <div className="flex-1 text-center font-bold text-base text-foreground">フードを追加</div>
+        {onFavorite && (
+          <button
+            onClick={async () => {
+              if (faved || favoriting) return;
+              await onFavorite(food);
+              setFaved(true);
+            }}
+            disabled={favoriting || faved}
+            className="tap-target px-1"
+            aria-label="お気に入り登録"
+            title="お気に入り（自分の食品）に登録"
+          >
+            <Star className="h-5 w-5" style={{ color: faved ? "oklch(0.78 0.16 75)" : "oklch(0.7 0.02 252)" }} fill={faved ? "oklch(0.78 0.16 75)" : "none"} />
+          </button>
+        )}
         <button onClick={() => onSave(scaled)} disabled={saving} className="text-sm font-bold px-2" style={{ color: BLUE }}>
           {saving ? "..." : "記録"}
         </button>
