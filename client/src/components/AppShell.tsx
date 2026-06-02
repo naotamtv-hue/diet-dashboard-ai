@@ -133,14 +133,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
         {/* Brand */}
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer select-none">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-900 font-bold text-sm"
-              style={{ background: "oklch(0.58 0.19 254)" }}
-            >
-              D
-            </div>
-            <span className="font-bold text-base text-slate-900 tracking-tight hidden sm:block">
-              Diet Atelier
+            <img src="/kalon-logo.png" alt="Kalon" className="w-8 h-8 object-contain" />
+            <span className="font-bold text-base tracking-tight hidden sm:block" style={{ color: "#1e2a78" }}>
+              Kalon
             </span>
             {currentLabel && (
               <span className="font-semibold text-base text-slate-900 sm:hidden">
@@ -400,13 +395,8 @@ function LandingPage() {
         }}
       >
         <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-900 font-bold text-sm"
-            style={{ background: "oklch(0.58 0.19 254)" }}
-          >
-            D
-          </div>
-          <span className="font-bold text-base text-slate-900">Diet Atelier</span>
+          <img src="/kalon-logo.png" alt="Kalon" className="w-8 h-8 object-contain" />
+          <span className="font-bold text-base" style={{ color: "#1e2a78" }}>Kalon</span>
         </div>
       </header>
 
@@ -416,14 +406,14 @@ function LandingPage() {
       >
         {/* Hero */}
         <div className="mb-12">
-          <div className="section-label mb-3">AI-POWERED DIET MANAGEMENT</div>
+          <div className="section-label mb-3">KALON · 食べる・鍛える・整える</div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4 leading-tight">
-            毎日の食事を記録して、<br />
-            理想の体型へ。
+            食事とトレーニングを、<br />
+            ひとつに。
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            食事の写真を撮るだけでAIがカロリーとPFCを推定。体重・運動・体型写真まで一元管理。
-            目標から逆算した1日の摂取カロリー計画で、着実に減量を進めましょう。
+            理想の身体を、記録からつくる。食事の写真やパッケージからAIがカロリー・PFCを推定し、
+            体重・運動・筋トレまで一元管理。目標から逆算した毎日のプランで、無理なく整えていきましょう。
           </p>
         </div>
 
