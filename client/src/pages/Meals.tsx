@@ -19,7 +19,7 @@ import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl, todayDateString } from "@/
 import FoodSearch from "@/components/FoodSearch";
 import { trpc } from "@/lib/trpc";
 import { mealMotivation } from "@/lib/motivation";
-import { Camera, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Copy, Loader2, Pencil, Plus, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +32,20 @@ const INNER = {
   background: "oklch(0.965 0.004 250)",
   border: "1px solid oklch(0.92 0.006 250)",
 } as const;
+
+function shiftDate(d: string, days: number): string {
+  const [y, m, day] = d.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, day + days)).toISOString().slice(0, 10);
+}
+
+function formatDateLabel(d: string): string {
+  const [y, m, day] = d.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, day));
+  const wd = ["日", "月", "火", "水", "木", "金", "土"][dt.getUTCDay()];
+  const today = todayDateString();
+  const prefix = d === today ? "今日 · " : d === shiftDate(today, -1) ? "昨日 · " : "";
+  return `${prefix}${m}月${day}日(${wd})`;
+}
 
 type Analysis = {
   description: string;
@@ -335,185 +349,53 @@ export default function Meals() {
 
   return (
     <div className="space-y-4 pb-4">
-      {/* Page Header */}
-      <div className="pt-1">
-        <div className="section-label mb-1">MEALS</div>
-        <h1 className="text-2xl font-bold text-slate-900">食事を記録</h1>
+      {/* Page Header + 昨日と同じ */}
+      <div className="pt-1 flex items-end justify-between gap-3">
+        <div>
+          <div className="section-label mb-1">MEALS</div>
+          <h1 className="text-2xl font-bold text-slate-900">食事を記録</h1>
+        </div>
+        <button
+          type="button"
+          className="text-xs font-semibold flex items-center gap-1 px-3 py-2 rounded-full disabled:opacity-50 flex-shrink-0"
+          style={{ background: "oklch(0.95 0.02 254)", color: "oklch(0.58 0.19 254)" }}
+          disabled={copyM.isPending}
+          onClick={() => copyM.mutate({ fromDate: yesterdayStr, toDate: date })}
+        >
+          <Copy className="h-3.5 w-3.5" /> 昨日と同じ
+        </button>
       </div>
 
-      {/* 入力フォーム */}
-      <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
-        {/* 日付・区分 */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label className="section-label">日付</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11" />
-          </div>
-          <div className="space-y-2">
-            <Label className="section-label">区分</Label>
-            <Select value={mealType} onValueChange={(v) => setMealType(v as typeof mealType)}>
-              <SelectTrigger className="w-full h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MEAL_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{MEAL_TYPE_LABELS[t]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* 入力方法ボタン群（アイコン上・ラベル下で文字切れを防止） */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onPickPhoto(f);
-                e.target.value = "";
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-auto py-3 flex flex-col items-center gap-1.5 font-semibold text-sm rounded-xl"
-              disabled={analyzing}
-              onClick={() => fileRef.current?.click()}
-            >
-              {analyzing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Camera className="h-5 w-5" />
-              )}
-              <span>{analyzing ? "AI解析中..." : "写真で解析"}</span>
-            </Button>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-auto py-3 flex flex-col items-center gap-1.5 font-semibold text-sm rounded-xl"
-            onClick={() => setConvenienceOpen(true)}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span>コンビニから選ぶ</span>
-          </Button>
-        </div>
-
-        {/* 食べ物・商品名でAI検索 */}
-        <div className="space-y-1.5">
-          <Label className="section-label">名前で検索（AI推定）</Label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="例：唐揚げ3個 / セブンのおにぎり 鮭"
-              value={nameQuery}
-              onChange={(e) => setNameQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  onSearchByName();
-                }
-              }}
-              className="h-11 flex-1"
-            />
-            <Button
-              type="button"
-              className="h-11 px-4 gap-1.5 font-semibold rounded-xl flex-shrink-0"
-              style={{ background: "oklch(0.58 0.19 254)" }}
-              disabled={estimateM.isPending || !nameQuery.trim()}
-              onClick={onSearchByName}
-            >
-              {estimateM.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
-              検索
-            </Button>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            写真がなくても、食べ物やコンビニ商品の名前からおおよそのカロリー・PFCを自動入力します。
-          </p>
-        </div>
-
-        {/* よく食べる物 ／ 昨日と同じ */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="section-label">よく食べる物</Label>
-            <button
-              type="button"
-              className="text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
-              style={{ color: "oklch(0.58 0.19 254)" }}
-              disabled={copyM.isPending}
-              onClick={() => copyM.mutate({ fromDate: yesterdayStr, toDate: date })}
-            >
-              <Plus className="h-3.5 w-3.5" /> 昨日と同じ
-            </button>
-          </div>
-          {frequentQ.data && frequentQ.data.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {frequentQ.data.map((item) => (
-                <button
-                  key={item.name}
-                  type="button"
-                  onClick={() => onSelectFrequent(item)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                  style={{ background: "oklch(0.965 0.004 250)", border: "1px solid oklch(0.92 0.006 250)" }}
-                >
-                  <span className="text-slate-900">{item.name}</span>
-                  <span className="text-muted-foreground ml-1.5">{item.calories}kcal</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground">
-              記録を重ねると、よく食べる物がここに並んでワンタップ入力できます。
-            </p>
-          )}
-        </div>
-
-        {imageUrl && (
-          <div className="rounded-xl overflow-hidden border border-border">
-            <img src={imageUrl} alt="食事" className="w-full max-h-52 object-cover" />
-          </div>
-        )}
-
-        <div className="space-y-1.5">
-          <Label className="section-label">内容（任意）</Label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="例：鶏むね肉のサラダと玄米ごはん"
-            rows={2}
-            className="resize-none"
+      {/* 日付ナビ */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setDate(shiftDate(date, -1))}
+          className="h-11 w-11 flex-shrink-0 rounded-xl flex items-center justify-center"
+          style={CARD}
+          aria-label="前の日"
+        >
+          <ChevronLeft className="h-5 w-5 text-slate-700" />
+        </button>
+        <div className="flex-1 rounded-xl h-11 flex items-center justify-center relative" style={CARD}>
+          <span className="text-sm font-bold text-slate-900">{formatDateLabel(date)}</span>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer h-full"
+            aria-label="日付を選択"
           />
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <NumField label="カロリー (kcal)" value={calories} onChange={setCalories} />
-          <NumField label="タンパク質 (g)" value={proteinG} onChange={setProteinG} />
-          <NumField label="脂質 (g)" value={fatG} onChange={setFatG} />
-          <NumField label="炭水化物 (g)" value={carbsG} onChange={setCarbsG} />
-        </div>
-
-        <Button
-          onClick={submit}
-          disabled={addM.isPending}
-          className="w-full h-12 font-bold text-sm rounded-xl"
+        <button
+          type="button"
+          onClick={() => setDate(shiftDate(date, 1))}
+          className="h-11 w-11 flex-shrink-0 rounded-xl flex items-center justify-center"
+          style={CARD}
+          aria-label="次の日"
         >
-          {addM.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-          記録する
-        </Button>
-
-        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-          <Sparkles className="h-3 w-3" />
-          写真から推定される値は目安です。必要に応じて編集してください。
-        </div>
+          <ChevronRight className="h-5 w-5 text-slate-700" />
+        </button>
       </div>
 
       {/* 選択日の合計 */}

@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { MEAL_TYPES, MEAL_TYPE_LABELS } from "@/lib/labels";
-import { ChevronLeft, Plus, Search, Sparkles, Loader2, Minus } from "lucide-react";
-import { useState } from "react";
+import { MEAL_TYPES, MEAL_TYPE_LABELS, fileToDataUrl } from "@/lib/labels";
+import { Camera, ChevronLeft, Plus, Search, Sparkles, Loader2, Minus } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 const BLUE = "oklch(0.58 0.19 254)";
@@ -34,6 +34,8 @@ export default function FoodSearch({
   const [mealType, setMealType] = useState<MealType>(initialMealType);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<Food | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const analyzeM = trpc.meals.analyzePhoto.useMutation();
 
   const historyQ = trpc.meals.history.useQuery(undefined, { staleTime: 30_000 });
   const foodsQ = trpc.foods.search.useQuery(
@@ -80,6 +82,21 @@ export default function FoodSearch({
       setDetail({ name: a.description, calories: a.calories, proteinG: a.proteinG, fatG: a.fatG, carbsG: a.carbsG });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "計算に失敗しました");
+    }
+  };
+
+  const analyzePhoto = async (file: File) => {
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const res = await analyzeM.mutateAsync({ imageDataUrl: dataUrl });
+      const a = res.analysis as { description: string; calories: number; proteinG: number; fatG: number; carbsG: number };
+      if (!a.calories) {
+        toast.error(a.description || "解析できませんでした");
+        return;
+      }
+      setDetail({ name: a.description, calories: a.calories, proteinG: a.proteinG, fatG: a.fatG, carbsG: a.carbsG });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "解析に失敗しました");
     }
   };
 
@@ -151,8 +168,8 @@ export default function FoodSearch({
       </div>
 
       {/* Search */}
-      <div className="px-4 py-3">
-        <div className="relative">
+      <div className="px-4 py-3 flex gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={query}
@@ -162,6 +179,26 @@ export default function FoodSearch({
             autoFocus
           />
         </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) analyzePhoto(f);
+            e.target.value = "";
+          }}
+        />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={analyzeM.isPending}
+          className="h-12 w-12 flex-shrink-0 rounded-full flex items-center justify-center border"
+          style={{ borderColor: BLUE, color: BLUE }}
+          aria-label="写真で解析"
+        >
+          {analyzeM.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+        </button>
       </div>
 
       {/* List */}
