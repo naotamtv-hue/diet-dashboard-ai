@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
-import { Bell, Loader2, LogOut, ShieldCheck } from "lucide-react";
+import { Bell, KeyRound, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -99,6 +99,9 @@ export default function Settings() {
         </Button>
       </div>
 
+      {/* パスワード変更 */}
+      <PasswordChangeCard />
+
       {/* 通知リマインダー */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
         <div className="flex items-center gap-2 section-label">
@@ -186,6 +189,56 @@ function ReminderRow({
           className="max-w-[140px] h-10"
         />
       </div>
+    </div>
+  );
+}
+
+/* ── パスワード変更 ── */
+function PasswordChangeCard() {
+  const [cur, setCur] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const m = trpc.auth.changePassword.useMutation({
+    onSuccess: () => {
+      toast.success("パスワードを変更しました");
+      setCur(""); setNext(""); setConfirm("");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const submit = () => {
+    if (next.length < 6) { toast.error("新しいパスワードは6文字以上にしてください"); return; }
+    if (next !== confirm) { toast.error("確認用パスワードが一致しません"); return; }
+    m.mutate({ currentPassword: cur, newPassword: next });
+  };
+  return (
+    <div className="rounded-xl px-4 py-4 space-y-3" style={CARD}>
+      <div className="flex items-center gap-2 section-label">
+        <KeyRound className="h-3.5 w-3.5" />
+        パスワード変更
+      </div>
+      <div className="space-y-2">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">現在のパスワード</Label>
+          <Input type="password" value={cur} onChange={(e) => setCur(e.target.value)} className="h-11" autoComplete="current-password" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">新しいパスワード（6文字以上）</Label>
+          <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} className="h-11" autoComplete="new-password" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">新しいパスワード（確認）</Label>
+          <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="h-11" autoComplete="new-password" />
+        </div>
+      </div>
+      <Button
+        className="h-11 w-full font-semibold rounded-xl"
+        style={{ background: "oklch(0.58 0.19 254)" }}
+        disabled={m.isPending || !cur || !next || !confirm}
+        onClick={submit}
+      >
+        {m.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        パスワードを変更
+      </Button>
     </div>
   );
 }

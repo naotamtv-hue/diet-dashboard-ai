@@ -198,6 +198,23 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    changePassword: protectedProcedure
+      .input(
+        z.object({
+          currentPassword: z.string().min(1),
+          newPassword: z.string().min(6, "新しいパスワードは6文字以上にしてください"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const user = await db.getUserByOpenId(ctx.user.openId);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "ユーザーが見つかりません" });
+        // 既にパスワード設定済みなら現在のパスワードを検証（移行直後の未設定は現在PW不問でOK）
+        if (user.passwordHash && !(await verifyPassword(input.currentPassword, user.passwordHash))) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "現在のパスワードが違います" });
+        }
+        await db.setUserPassword(user.id, await hashPassword(input.newPassword), user.name || user.email?.split("@")[0] || "user");
+        return { success: true } as const;
+      }),
   }),
 
   /* ============================== meals ============================== */
