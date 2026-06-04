@@ -1,0 +1,23 @@
+name: keep-alive
+
+# Render 無料枠は 15 分アクセスが無いと休眠し、次回アクセスで 30〜70 秒のコールドスタートが発生する。
+# このワークフローが 10 分おきに本番URLを叩いて常時起こしておくことで、あの "APPLICATION LOADING" 画面を防ぐ。
+on:
+  schedule:
+    - cron: "*/10 * * * *" # 10分ごと（GitHubの都合で多少遅延しても15分未満を維持）
+  workflow_dispatch: {} # 手動実行も可
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Kalon production
+        run: |
+          URL="https://diet-dashboard-ai.onrender.com/"
+          echo "Pinging $URL"
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "Unexpected status: $code"
+            exit 1
+          fi
