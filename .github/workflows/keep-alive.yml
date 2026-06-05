@@ -1,23 +1,49 @@
 name: keep-alive
 
-# Render 無料枠は 15 分アクセスが無いと休眠し、次回アクセスで 30〜70 秒のコールドスタートが発生する。
-# このワークフローが 10 分おきに本番URLを叩いて常時起こしておくことで、あの "APPLICATION LOADING" 画面を防ぐ。
+# Render 無料枠は 15 分アクセスが無いと休眠し、次回アクセスで 30〜70 秒のコールドスタート
+# （ユーザーが見る "待機画面"）が発生する。これを防ぐため本番URLを叩き続ける。
+#
+# 【なぜ単純な */10 cron ではダメか】
+# GitHub Actions の schedule は無料公開リポジトリだと激しく間引かれ、*/10 指定でも
+# 実際には数時間に1回しか発火しない（→ その間アプリは寝てしまう）。
+# そこで「1回の実行で約6時間ループし続けて5分おきに ping し、終了時に自分を再起動」する
+# セルフループ方式にする。GitHub には数時間に1回ループを起こしてもらえれば十分で、
+# ping 自体はジョブ内の sleep ループで連続実行されるため発火頻度のブレに左右されない。
 on:
   schedule:
-    - cron: "*/10 * * * *" # 10分ごと（GitHubの都合で多少遅延しても15分未満を維持）
-  workflow_dispatch: {} # 手動実行も可
+    - cron: "*/10 * * * *" # ループが途切れた時の保険（間引かれても数時間内に必ず再開）
+  workflow_dispatch: {} # 手動実行 & セルフ再起動の入口
+  push:
+    branches: [main]
+    paths: [".github/workflows/keep-alive.yml"] # ワークフロー更新時に即ループ開始
+
+# 新しい実行が走ったら古いループはキャンセル（多重起動を防ぎ、ハンドオフを綺麗にする）
+concurrency:
+  group: keep-alive
+  cancel-in-progress: true
+
+permissions:
+  actions: write # 終了時に自分自身を workflow_dispatch で再起動するため
 
 jobs:
-  ping:
+  ping-loop:
     runs-on: ubuntu-latest
+    timeout-minutes: 355 # ジョブ上限(6h)未満。終わる前に自分を再起動して連鎖させる
     steps:
-      - name: Ping Kalon production
+      - name: Keep Kalon awake (5分おきに約5.8時間 ping)
         run: |
           URL="https://diet-dashboard-ai.onrender.com/"
-          echo "Pinging $URL"
-          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$URL")
-          echo "HTTP $code"
-          if [ "$code" != "200" ]; then
-            echo "Unexpected status: $code"
-            exit 1
-          fi
+          # 70回 × 5分 ≒ 350分。最後の周回後に再起動ステップへ抜ける
+          for i in $(seq 1 70); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 --retry 2 --retry-delay 5 "$URL" || echo "000")
+            echo "[$i/70] $(date -u +%H:%M:%SZ) -> HTTP $code"
+            if [ "$i" -lt 70 ]; then
+              sleep 300
+            fi
+          done
+
+      - name: 自分自身を再起動してループを継続
+        if: always() # 途中失敗でも次の周回を必ず仕込む
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run keep-alive.yml --ref main
