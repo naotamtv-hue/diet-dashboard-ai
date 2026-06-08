@@ -11,7 +11,6 @@ import type { TrpcContext } from "./_core/context";
 import type { User } from "../drizzle/schema";
 import { BODY_PARTS } from "../drizzle/schema";
 import * as db from "./db";
-import { storagePut } from "./storage";
 import { analyzeMealImage, analyzePackageImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
 import { buildPlan, suggestPfcTargets } from "./nutrition";
 import { searchBasicFoods } from "./basic-foods";
@@ -64,18 +63,17 @@ const categorySchema = z.enum([
   "proteinSnack",
 ]);
 
-function uploadDataUrl(userId: number, dataUrl: string, prefix: string) {
+/** data:image/...;base64,... を検証してサイズ上限をチェックする（旧Manusストレージは廃止）。 */
+function validateImageDataUrl(dataUrl: string): { mime: string; bytes: number } {
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
   if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "画像データ形式が不正です" });
   const mime = match[1];
-  const b64 = match[2];
-  const buffer = Buffer.from(b64, "base64");
-  if (buffer.length > 12 * 1024 * 1024) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "画像サイズは12MBまでです" });
+  // base64長から概算バイト数を算出（4文字=3バイト）。大きな画像はクライアントで圧縮済みの想定。
+  const bytes = Math.floor((match[2].length * 3) / 4);
+  if (bytes > 8 * 1024 * 1024) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "画像サイズが大きすぎます（8MBまで）" });
   }
-  const ext = mime.split("/")[1]?.replace("+xml", "") || "jpg";
-  const key = `${userId}-${prefix}/${Date.now()}.${ext}`;
-  return storagePut(key, buffer, mime);
+  return { mime, bytes };
 }
 
 /* ============================== auth helpers ============================== */
@@ -239,24 +237,20 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const today = await checkAiQuota(ctx.user.id);
-        const { url } = await uploadDataUrl(ctx.user.id, input.imageDataUrl, "meals");
-        const origin = `${ctx.req.protocol}://${ctx.req.headers.host}`;
-        const absolute = url.startsWith("http") ? url : `${origin}${url}`;
-        const result = await analyzeMealImage(absolute);
+        // Geminiのvision APIは data:image/...;base64 のデータURLを直接受け取れる。
+        // 旧Manusストレージ(presign)は廃止済みのため、アップロードを経由せず直接解析する。
+        const result = await analyzeMealImage(input.imageDataUrl);
         await db.incrementAiUsage(ctx.user.id, today);
-        return { imageUrl: url, analysis: result };
+        return { imageUrl: null, analysis: result };
       }),
 
     analyzePackage: protectedProcedure
       .input(z.object({ imageDataUrl: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
         const today = await checkAiQuota(ctx.user.id);
-        const { url } = await uploadDataUrl(ctx.user.id, input.imageDataUrl, "meals");
-        const origin = `${ctx.req.protocol}://${ctx.req.headers.host}`;
-        const absolute = url.startsWith("http") ? url : `${origin}${url}`;
-        const result = await analyzePackageImage(absolute);
+        const result = await analyzePackageImage(input.imageDataUrl);
         await db.incrementAiUsage(ctx.user.id, today);
-        return { imageUrl: url, analysis: result };
+        return { imageUrl: null, analysis: result };
       }),
 
     estimateByName: protectedProcedure
@@ -938,16 +932,18 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const { url } = await uploadDataUrl(ctx.user.id, input.imageDataUrl, "body");
+        // 旧Manus S3ストレージは廃止済み。圧縮済みのデータURLをそのままDBに保存し、
+        // <img src=...> で直接表示する（外部ストレージ不要・無料）。
+        validateImageDataUrl(input.imageDataUrl);
         await db.insertBodyPhoto({
           userId: ctx.user.id,
           recordDate: input.date,
-          imageUrl: url,
+          imageUrl: input.imageDataUrl,
           weightKg:
             typeof input.weightKg === "number" ? input.weightKg.toFixed(2) : null,
           note: input.note ?? null,
         });
-        return { success: true, imageUrl: url } as const;
+        return { success: true, imageUrl: input.imageDataUrl } as const;
       }),
 
     remove: protectedProcedure
