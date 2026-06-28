@@ -48,6 +48,10 @@ export default function Workouts() {
   const [editFavId, setEditFavId] = useState<number | null>(null);
   const [editFavName, setEditFavName] = useState("");
   const [editFavKcal, setEditFavKcal] = useState("");
+  // お気に入りを手動で追加（種目なし・名前とkcalだけの固定登録）
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualName, setManualName] = useState("");
+  const [manualKcal, setManualKcal] = useState("");
 
   const utils = trpc.useUtils();
   const listQ = trpc.workouts.listByDate.useQuery({ date });
@@ -168,6 +172,34 @@ export default function Workouts() {
     toast.success("お気に入りに登録しました ⭐");
   };
 
+  // 種目なしで固定登録（例：運動＝500kcal）。種目名は名前で代用する。
+  const saveManualFav = async () => {
+    const kcal = Number(manualKcal);
+    if (!manualName.trim()) {
+      toast.error("名前を入力してください（例：運動）");
+      return;
+    }
+    if (!Number.isFinite(kcal) || kcal <= 0) {
+      toast.error("消費カロリーを入力してください");
+      return;
+    }
+    await favAddM.mutateAsync({
+      name: manualName.trim(),
+      activity: manualName.trim(),
+      durationMin: 0,
+      intensity: "medium",
+      weightKg: null,
+      reps: null,
+      sets: null,
+      incline: false,
+      caloriesBurned: kcal,
+    });
+    setManualOpen(false);
+    setManualName("");
+    setManualKcal("");
+    toast.success("お気に入りに登録しました ⭐");
+  };
+
   // お気に入りをフォームに反映（A案：自分で確認して記録できる）
   const applyFav = (f: NonNullable<typeof favQ.data>[number]) => {
     setActivity(f.activity);
@@ -249,14 +281,47 @@ export default function Workouts() {
 
       {/* お気に入りトレーニング（My Workouts） */}
       <div className="rounded-xl px-4 py-4" style={CARD}>
-        <div className="flex items-center gap-2 section-label mb-3">
-          <Star className="h-3.5 w-3.5" />
-          お気に入りトレーニング
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 section-label">
+            <Star className="h-3.5 w-3.5" />
+            お気に入りトレーニング
+          </div>
+          <button
+            className="flex items-center gap-1 text-xs font-bold"
+            style={{ color: "oklch(0.38 0.14 268)" }}
+            onClick={() => setManualOpen((v) => !v)}
+          >
+            <Plus className="h-3.5 w-3.5" />手動で追加
+          </button>
         </div>
+
+        {/* 種目なしの固定登録フォーム（例：運動＝500kcal） */}
+        {manualOpen && (
+          <div className="rounded-xl px-4 py-3 space-y-2 mb-3" style={INNER}>
+            <div className="text-[11px] text-muted-foreground">種目を入れなくてOK。名前と消費カロリーだけで登録できます。</div>
+            <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="名前（例：運動 / ジム / 散歩）" className="h-10" />
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={manualKcal}
+                onChange={(e) => setManualKcal(e.target.value)}
+                placeholder="消費kcal（例：500）"
+                className="h-10 flex-1"
+              />
+              <span className="text-xs text-muted-foreground">kcal</span>
+            </div>
+            <Button className="w-full h-10 rounded-lg font-bold" disabled={favAddM.isPending} onClick={saveManualFav}>
+              {favAddM.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Star className="h-4 w-4 mr-2" />}
+              この内容で登録
+            </Button>
+          </div>
+        )}
+
         {(favQ.data ?? []).length === 0 ? (
           <div className="text-[11px] text-muted-foreground leading-relaxed">
             よく行う運動（例：ジム1時間）を消費カロリー付きで登録すると、ここからワンタップで呼び出し・記録できます。
-            下で「消費カロリーを計算」したあと「⭐ お気に入りに登録」から保存できます。
+            右上の「手動で追加」で種目なしの固定登録（例：運動＝500kcal）も、下の「消費カロリーを計算」→「⭐ お気に入りに登録」でAI概算からの登録もできます。
           </div>
         ) : (
           <div className="space-y-2">
