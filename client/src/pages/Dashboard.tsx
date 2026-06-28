@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { MEAL_TYPE_LABELS, formatDate, todayDateString } from "@/lib/labels";
 import { trpc } from "@/lib/trpc";
 import {
   Apple,
+  CalendarClock,
   CalendarHeart,
   Camera,
   Dumbbell,
@@ -11,9 +13,11 @@ import {
   Sparkles,
   Target,
   TrendingDown,
+  X,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { toast } from "sonner";
 
 /* ── helpers ── */
 function pct(v: number, total: number) {
@@ -159,6 +163,10 @@ export default function Dashboard() {
   const streakQ = trpc.stats.streak.useQuery({ today });
   const weeklyQ = trpc.stats.weeklyReview.useQuery({ today });
   const weightsListQ = trpc.weights.list.useQuery();
+  const utils = trpc.useUtils();
+  const setTargetDateM = trpc.goals.setTargetDate.useMutation({
+    onSuccess: () => utils.goals.get.invalidate(),
+  });
   const goal = goalQ.data;
   const summary = summaryQ.data;
   const latestWeight = weightLatestQ.data;
@@ -232,8 +240,21 @@ export default function Dashboard() {
         }
       }
     }
-    return { kind: "trend" as const, slope, perWeek, lastKg, proj30, proj90, flat, targetW, reach, reached };
+    const lastT = pts[pts.length - 1].t;
+    return { kind: "trend" as const, slope, perWeek, lastKg, lastT, proj30, proj90, flat, targetW, reach, reached };
   }, [weightsListQ.data, targetW]);
+
+  // 目標日（任意）と、そこまでの予測体重
+  const goalTargetDate = goal?.targetDate ?? null;
+  const targetDateProjection = useMemo(() => {
+    if (eta.kind !== "trend" || !goalTargetDate) return null;
+    const tMs = Date.parse(goalTargetDate);
+    if (Number.isNaN(tMs)) return null;
+    const days = (tMs - eta.lastT) / 86400000;
+    const projWeight = eta.lastKg + eta.slope * days;
+    const daysFromNow = Math.round((tMs - Date.now()) / 86400000);
+    return { projWeight, daysFromNow };
+  }, [eta, goalTargetDate]);
 
   return (
     <div className="space-y-4 pb-4">
@@ -418,6 +439,65 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+
+            {/* 目標日を指定 → その日の予測体重 */}
+            {goal && (
+              <div className="rounded-lg px-4 py-3 space-y-2" style={{ background: "oklch(0.965 0.004 250)" }}>
+                <div className="flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5" style={{ color: "oklch(0.38 0.14 268)" }} />
+                  <span className="text-xs font-bold text-slate-900">目標日までの予測</span>
+                  {goalTargetDate && (
+                    <button
+                      className="ml-auto text-muted-foreground hover:text-destructive flex items-center gap-0.5 text-[10px]"
+                      onClick={() => setTargetDateM.mutate({ targetDate: null })}
+                    >
+                      <X className="h-3 w-3" />クリア
+                    </button>
+                  )}
+                </div>
+                <Input
+                  type="date"
+                  value={goalTargetDate ?? ""}
+                  min={today}
+                  onChange={(e) =>
+                    setTargetDateM.mutate(
+                      { targetDate: e.target.value || null },
+                      { onSuccess: () => e.target.value && toast.success("目標日を設定しました") }
+                    )
+                  }
+                  className="h-10"
+                />
+                {targetDateProjection ? (
+                  <div className="pt-0.5">
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(goalTargetDate!)}
+                      {targetDateProjection.daysFromNow >= 0
+                        ? `（あと${targetDateProjection.daysFromNow}日）`
+                        : "（過去の日付です）"}{" "}
+                      まで このペースだと
+                    </div>
+                    <div className="text-2xl font-bold mt-0.5" style={{ color: "oklch(0.72 0.18 130)" }}>
+                      約{targetDateProjection.projWeight.toFixed(1)}
+                      <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
+                    </div>
+                    {eta.targetW > 0 && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        {(() => {
+                          const diff = targetDateProjection.projWeight - eta.targetW;
+                          if (Math.abs(diff) < 0.1) return `目標体重（${eta.targetW.toFixed(1)}kg）にちょうど到達する見込み🎯`;
+                          if (diff > 0) return `目標体重（${eta.targetW.toFixed(1)}kg）まで あと${diff.toFixed(1)}kg の見込み`;
+                          return `目標体重（${eta.targetW.toFixed(1)}kg）を ${Math.abs(diff).toFixed(1)}kg 上回る見込み🎉`;
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-muted-foreground">
+                    日付を選ぶと「その日まで今のペースで続けると何kgか」を表示します。
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

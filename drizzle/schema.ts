@@ -151,6 +151,8 @@ export const goals = sqliteTable("goals", {
   currentWeightKg: text("currentWeightKg").notNull(),
   targetWeightKg: text("targetWeightKg").notNull(),
   targetWeeks: integer("targetWeeks").notNull(),
+  // 目標日（任意・YYYY-MM-DD）。設定するとその日の予測体重を表示する。
+  targetDate: text("targetDate"),
   activityLevel: text("activityLevel", {
     enum: ["sedentary", "light", "moderate", "active", "veryActive"],
   }).notNull(),

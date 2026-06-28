@@ -620,6 +620,18 @@ export const appRouter = router({
   goals: router({
     get: protectedProcedure.query(({ ctx }) => db.getGoal(ctx.user.id)),
 
+    // 目標日（任意）を設定／クリア。予測カードで使う。
+    setTargetDate: protectedProcedure
+      .input(z.object({ targetDate: dateStringSchema.nullable() }))
+      .mutation(async ({ ctx, input }) => {
+        const goal = await db.getGoal(ctx.user.id);
+        if (!goal) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "先に目標を設定してください" });
+        }
+        await db.setGoalTargetDate(ctx.user.id, input.targetDate);
+        return { success: true } as const;
+      }),
+
     save: protectedProcedure
       .input(
         z.object({

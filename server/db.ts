@@ -466,6 +466,17 @@ export async function getGoal(userId: number) {
   return r[0] ?? null;
 }
 
+/** 目標日(YYYY-MM-DD)だけを更新。null/空でクリア。既存の目標行が前提。 */
+export async function setGoalTargetDate(userId: number, targetDate: string | null) {
+  const db = await requireDb();
+  const r = await db
+    .update(goals)
+    .set({ targetDate: targetDate || null })
+    .where(eq(goals.userId, userId))
+    .returning({ id: goals.id });
+  return r[0]?.id ?? null;
+}
+
 /* ========================= convenience items ========================= */
 
 export async function searchConvenienceItems(params: {
