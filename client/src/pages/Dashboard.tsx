@@ -189,12 +189,16 @@ export default function Dashboard() {
   // 運動消費は摂取枠に足さない（目標は活動量込みのTDEEベースのため二重計上を防ぐ）。
   const remainingBudget = Math.max(0, targetCal - consumed);
 
-  // 体重トレンドから目標到達を予測（線形回帰）。
+  // 体重トレンドから「このペースなら、いつ・何kgになるか」を予測（線形回帰）。
+  // 記録が少ない時もガイドを返し、ダッシュボードに常時表示できるようにする。
   const eta = useMemo(() => {
     const pts = (weightsListQ.data ?? [])
       .map((w) => ({ t: Date.parse(w.recordDate), kg: Number(w.weightKg) }))
-      .filter((p) => !Number.isNaN(p.t) && !Number.isNaN(p.kg));
-    if (pts.length < 2 || !targetW) return null;
+      .filter((p) => !Number.isNaN(p.t) && !Number.isNaN(p.kg))
+      .sort((a, b) => a.t - b.t);
+    if (pts.length < 2) {
+      return { kind: "insufficient" as const, have: pts.length, need: Math.max(1, 2 - pts.length) };
+    }
     const t0 = pts[0].t;
     const xs = pts.map((p) => (p.t - t0) / 86400000);
     const ys = pts.map((p) => p.kg);
@@ -204,15 +208,31 @@ export default function Dashboard() {
     const sxx = xs.reduce((a, b) => a + b * b, 0);
     const sxy = xs.reduce((a, b, i) => a + b * ys[i], 0);
     const denom = n * sxx - sx * sx;
-    if (denom === 0) return null;
+    if (denom === 0) return { kind: "insufficient" as const, have: pts.length, need: 1 };
     const slope = (n * sxy - sx * sy) / denom; // kg/日
     const lastKg = ys[ys.length - 1];
     const perWeek = slope * 7;
-    if (lastKg <= targetW) return { kind: "reached" as const, perWeek };
-    if (slope >= -0.0015) return { kind: "stalled" as const, perWeek };
-    const days = Math.round((lastKg - targetW) / -slope);
-    const etaDate = new Date(Date.now() + days * 86400000);
-    return { kind: "down" as const, perWeek, days, etaDate };
+    // 30日後・90日後の予測体重（このペースが続いた場合）
+    const proj30 = lastKg + slope * 30;
+    const proj90 = lastKg + slope * 90;
+    const flat = Math.abs(slope) < 0.0015; // ほぼ横ばい（約±0.01kg/週未満）
+
+    // 目標体重への到達予測（目標が設定され、目標方向へ動いている時）
+    let reach: { days: number; date: Date } | null = null;
+    let reached = false;
+    if (targetW) {
+      const remaining = lastKg - targetW; // 減量なら正、増量なら負
+      if (Math.abs(remaining) < 0.05) {
+        reached = true;
+      } else if (!flat && Math.sign(remaining) === Math.sign(-slope)) {
+        // 目標へ近づいている（減量目標で減少中／増量目標で増加中）
+        const days = Math.round(remaining / -slope);
+        if (days > 0 && days <= 3650) {
+          reach = { days, date: new Date(Date.now() + days * 86400000) };
+        }
+      }
+    }
+    return { kind: "trend" as const, slope, perWeek, lastKg, proj30, proj90, flat, targetW, reach, reached };
   }, [weightsListQ.data, targetW]);
 
   return (
@@ -311,6 +331,97 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── 体重予測カード（常時表示）── */}
+      <div
+        className="rounded-xl px-5 py-5"
+        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.92 0.006 250)" }}
+      >
+        <div className="flex items-center gap-2 section-label mb-3">
+          <TrendingDown className="h-3.5 w-3.5" />
+          体重予測
+        </div>
+
+        {eta.kind === "insufficient" ? (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed">
+              体重をあと<span className="font-bold text-slate-900">{eta.need}回</span>記録すると、
+              このペースで<span className="font-semibold text-slate-900">いつ何kgになるか</span>を予測して表示します。
+            </div>
+            <Link href="/weight">
+              <Button size="sm" className="flex-shrink-0 text-xs h-8 px-3 rounded-lg">記録する</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* メイン予測：いつ・何kgか */}
+            <div
+              className="rounded-lg px-4 py-3"
+              style={{ background: "oklch(0.965 0.004 250)" }}
+            >
+              {eta.reached ? (
+                <div className="text-base font-bold text-slate-900">目標体重に到達しています！🎉</div>
+              ) : eta.reach ? (
+                <>
+                  <div className="text-xs text-muted-foreground">このペースで続けると</div>
+                  <div className="text-lg font-bold text-slate-900 mt-0.5 leading-snug">
+                    {eta.reach.date.getFullYear()}年{eta.reach.date.getMonth() + 1}月{eta.reach.date.getDate()}日頃
+                    <span className="text-muted-foreground font-normal text-sm">に</span>
+                    <span style={{ color: "oklch(0.72 0.18 130)" }}> {eta.targetW!.toFixed(1)}kg</span>
+                    <span className="text-muted-foreground font-normal text-sm"> 達成</span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    あと約{eta.reach.days}日 ／ 目標まで {Math.abs(eta.lastKg - eta.targetW!).toFixed(1)}kg
+                  </div>
+                </>
+              ) : eta.flat ? (
+                <>
+                  <div className="text-base font-bold text-slate-900">最近は横ばいです</div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    このままだと1ヶ月後も約{eta.proj30.toFixed(1)}kg。食事か運動を少し見直すと動き出します
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground">このペースで続けると</div>
+                  <div className="text-lg font-bold text-slate-900 mt-0.5">
+                    1ヶ月後 <span style={{ color: "oklch(0.72 0.18 130)" }}>約{eta.proj30.toFixed(1)}kg</span>
+                  </div>
+                  {eta.targetW ? (
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      ※ 今のペースは目標（{eta.targetW.toFixed(1)}kg）方向に向かっていません
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground mt-1">目標体重を設定すると到達日も予測できます</div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* 補助：週ペースと将来体重の見込み */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg px-3 py-2" style={{ background: "oklch(0.965 0.004 250)" }}>
+                <div className="text-[10px] text-muted-foreground">週ペース</div>
+                <div className="text-sm font-bold text-slate-900 mt-0.5">
+                  {eta.perWeek > 0 ? "+" : ""}{eta.perWeek.toFixed(2)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">kg</span>
+                </div>
+              </div>
+              <div className="rounded-lg px-3 py-2" style={{ background: "oklch(0.965 0.004 250)" }}>
+                <div className="text-[10px] text-muted-foreground">1ヶ月後</div>
+                <div className="text-sm font-bold text-slate-900 mt-0.5">
+                  約{eta.proj30.toFixed(1)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">kg</span>
+                </div>
+              </div>
+              <div className="rounded-lg px-3 py-2" style={{ background: "oklch(0.965 0.004 250)" }}>
+                <div className="text-[10px] text-muted-foreground">3ヶ月後</div>
+                <div className="text-sm font-bold text-slate-900 mt-0.5">
+                  約{eta.proj90.toFixed(1)}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">kg</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── 目標進捗カード ── */}
       {goal && (
         <div
@@ -344,29 +455,6 @@ export default function Dashboard() {
               style={{ width: `${lossPct}%`, background: "linear-gradient(90deg, oklch(0.38 0.14 268), oklch(0.72 0.18 130))" }}
             />
           </div>
-
-          {/* 目標到達予測 */}
-          {eta && (
-            <div
-              className="mt-3 rounded-lg px-3 py-2.5 flex items-start gap-2"
-              style={{ background: "oklch(0.965 0.004 250)" }}
-            >
-              <TrendingDown className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "oklch(0.72 0.18 130)" }} />
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                {eta.kind === "down" && (
-                  <>
-                    このペースなら{" "}
-                    <span className="font-bold text-slate-900">
-                      {eta.etaDate.getFullYear()}年{eta.etaDate.getMonth() + 1}月{eta.etaDate.getDate()}日
-                    </span>{" "}
-                    頃に目標達成（週{Math.abs(eta.perWeek).toFixed(1)}kgペース）
-                  </>
-                )}
-                {eta.kind === "reached" && <span className="text-slate-900 font-semibold">目標体重に到達しています！🎉</span>}
-                {eta.kind === "stalled" && "最近は横ばい。食事か運動を少し見直すと動き出します"}
-              </div>
-            </div>
-          )}
 
           {/* BMR / TDEE */}
           <div className="grid grid-cols-3 gap-2 mt-4">
