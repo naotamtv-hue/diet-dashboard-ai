@@ -14,19 +14,41 @@ const FORGE_KEY = ENV.forgeApiKey;
 // 使用モデル（環境変数で差し替え可能）。
 export const AI_MODEL = process.env.AI_MODEL || "gemini-2.5-flash";
 
-async function chat(payload: Record<string, unknown>) {
-  if (!FORGE_KEY) throw new Error("AI APIキーが未設定です（.env の BUILT_IN_FORGE_API_KEY）");
-  // Gemini 2.5系は「思考」トークンを消費し、max_tokens内で答えが途中で切れることがある。
-  // 構造化された短い回答なので思考はオフにし、応答を確実に完結させる。
-  const body: Record<string, unknown> = { reasoning_effort: "none", ...payload };
+// MYPERSOL（メインのAI食事コーチ）専用のプロバイダ。
+// COACH_API_KEY を設定すると MYPERSOL だけ Claude(Anthropic OpenAI互換) を使う。
+// 未設定なら従来どおり Gemini を使う（無料運用）。他のAI機能は常に Gemini。
+const COACH_URL = (process.env.COACH_API_URL || "https://api.anthropic.com/v1").replace(/\/+$/, "");
+const COACH_KEY = process.env.COACH_API_KEY || "";
+const COACH_MODEL = process.env.COACH_MODEL || "claude-sonnet-4-6";
+export const MYPERSOL_USES_CLAUDE = Boolean(COACH_KEY);
+
+type ChatOpts = { baseUrl?: string; apiKey?: string; provider?: "gemini" | "anthropic" };
+
+async function chat(payload: Record<string, unknown>, opts?: ChatOpts) {
+  const baseUrl = opts?.baseUrl || FORGE_URL;
+  const apiKey = opts?.apiKey || FORGE_KEY;
+  if (!apiKey) throw new Error("AI APIキーが未設定です（.env の BUILT_IN_FORGE_API_KEY）");
+  const isClaude = opts?.provider === "anthropic" || String(payload.model || "").startsWith("claude");
+  let body: Record<string, unknown>;
+  if (isClaude) {
+    // Anthropic の OpenAI互換は Gemini 固有の reasoning_effort や json_schema を解さないため外す。
+    // 構造化はプロンプトの「JSONのみ」指示＋ extractJson で担保する。
+    body = { ...payload };
+    delete (body as any).reasoning_effort;
+    delete (body as any).response_format;
+  } else {
+    // Gemini 2.5系は「思考」トークンを消費し、max_tokens内で答えが途中で切れることがある。
+    // 構造化された短い回答なので思考はオフにし、応答を確実に完結させる。
+    body = { reasoning_effort: "none", ...payload };
+  }
   let lastErr: Error | null = null;
   // 一時的な混雑(429/500/503)は短い待機をはさんで再試行する。
   for (let attempt = 0; attempt < 3; attempt++) {
-    const resp = await fetch(`${FORGE_URL}/chat/completions`, {
+    const resp = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${FORGE_KEY}`,
+        authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
     });
@@ -41,6 +63,20 @@ async function chat(payload: Record<string, unknown>) {
     throw lastErr;
   }
   throw lastErr ?? new Error("LLM request failed");
+}
+
+/** モデル出力からJSONを安全に取り出す（```json フェンスや前後テキストを除去）。Claude/Gemini両対応。 */
+function extractJson(content: unknown): any {
+  if (typeof content !== "string") return content;
+  let s = content.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  if (!s.startsWith("{") && !s.startsWith("[")) {
+    const i = s.indexOf("{");
+    const j = s.lastIndexOf("}");
+    if (i >= 0 && j > i) s = s.slice(i, j + 1);
+  }
+  return JSON.parse(s);
 }
 
 export type MealAnalysisResult = {
@@ -764,14 +800,19 @@ ${TRAINER_NUTRITION_KNOWLEDGE}
 }
 foodImprovements は2〜4個。日本語。`;
 
-  const payload = {
-    model: AI_MODEL,
+  // COACH_API_KEY があれば MYPERSOL だけ Claude(Sonnet) を使う。無ければ Gemini。
+  const useClaude = MYPERSOL_USES_CLAUDE;
+  const payload: Record<string, unknown> = {
+    model: useClaude ? COACH_MODEL : AI_MODEL,
     messages: [
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(context.numbers) },
     ],
     max_tokens: 1100,
-    response_format: {
+  };
+  if (!useClaude) {
+    // Gemini は json_schema strict が使えるので利用（確実な構造化）。
+    payload.response_format = {
       type: "json_schema",
       json_schema: {
         name: "mypersol_advice",
@@ -797,12 +838,12 @@ foodImprovements は2〜4個。日本語。`;
           required: ["summary", "todayAdvice", "foodImprovements", "paceVerdict", "warning"],
         },
       },
-    },
-  };
-  const data = await chat(payload);
+    };
+  }
+  const data = await chat(payload, useClaude ? { baseUrl: COACH_URL, apiKey: COACH_KEY, provider: "anthropic" } : undefined);
   const content = data?.choices?.[0]?.message?.content ?? "";
   try {
-    const parsed = typeof content === "string" ? JSON.parse(content) : content;
+    const parsed = extractJson(content);
     return {
       summary: String(parsed.summary ?? ""),
       todayAdvice: String(parsed.todayAdvice ?? ""),
