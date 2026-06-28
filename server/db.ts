@@ -18,6 +18,7 @@ import {
   users,
   weights,
   workouts,
+  favoriteWorkouts,
   exercises,
   workoutSets,
   InsertExercise,
@@ -322,6 +323,68 @@ export async function listRecentWorkouts(userId: number, limit = 30) {
 export async function deleteWorkout(userId: number, id: number) {
   const db = await requireDb();
   await db.delete(workouts).where(and(eq(workouts.userId, userId), eq(workouts.id, id)));
+}
+
+/* ============================== favorite workouts (My Workouts) ============================== */
+
+type FavoriteWorkoutInput = {
+  name: string;
+  activity: string;
+  durationMin: number;
+  intensity: "low" | "medium" | "high";
+  weightKg?: number | null;
+  reps?: number | null;
+  sets?: number | null;
+  incline?: boolean | null;
+  caloriesBurned: number;
+};
+
+export async function listFavoriteWorkouts(userId: number) {
+  const db = await requireDb();
+  return db
+    .select()
+    .from(favoriteWorkouts)
+    .where(eq(favoriteWorkouts.userId, userId))
+    .orderBy(desc(favoriteWorkouts.createdAt));
+}
+
+export async function addFavoriteWorkout(userId: number, data: FavoriteWorkoutInput) {
+  const db = await requireDb();
+  const [row] = await db
+    .insert(favoriteWorkouts)
+    .values({
+      userId,
+      name: data.name,
+      activity: data.activity,
+      durationMin: data.durationMin,
+      intensity: data.intensity,
+      weightKg: typeof data.weightKg === "number" ? data.weightKg.toFixed(2) : null,
+      reps: data.reps ?? null,
+      sets: data.sets ?? null,
+      incline: data.incline ?? false,
+      caloriesBurned: String(Math.max(0, Math.round(data.caloriesBurned))),
+    })
+    .returning();
+  return row;
+}
+
+export async function updateFavoriteWorkout(
+  userId: number,
+  id: number,
+  data: { name: string; caloriesBurned: number }
+) {
+  const db = await requireDb();
+  await db
+    .update(favoriteWorkouts)
+    .set({ name: data.name, caloriesBurned: String(Math.max(0, Math.round(data.caloriesBurned))) })
+    .where(and(eq(favoriteWorkouts.id, id), eq(favoriteWorkouts.userId, userId)));
+}
+
+export async function deleteFavoriteWorkout(userId: number, id: number) {
+  const db = await requireDb();
+  await db
+    .delete(favoriteWorkouts)
+    .where(and(eq(favoriteWorkouts.id, id), eq(favoriteWorkouts.userId, userId)));
 }
 
 /* ============================== goals ============================== */

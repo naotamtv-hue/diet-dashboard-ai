@@ -513,6 +513,47 @@ export const appRouter = router({
         await db.deleteWorkout(ctx.user.id, input.id);
         return { success: true } as const;
       }),
+
+    /* お気に入りトレーニング（My Workouts） */
+    favorites: router({
+      list: protectedProcedure.query(({ ctx }) => db.listFavoriteWorkouts(ctx.user.id)),
+      add: protectedProcedure
+        .input(
+          z.object({
+            name: z.string().trim().min(1).max(60),
+            activity: z.string().trim().min(1).max(120),
+            durationMin: z.number().int().min(0).max(600).default(0),
+            intensity: z.enum(["low", "medium", "high"]).default("medium"),
+            weightKg: z.number().min(0).max(500).optional().nullable(),
+            reps: z.number().int().min(0).max(200).optional().nullable(),
+            sets: z.number().int().min(0).max(50).optional().nullable(),
+            incline: z.boolean().optional().nullable(),
+            caloriesBurned: z.number().min(0).max(5000),
+          })
+        )
+        .mutation(({ ctx, input }) => db.addFavoriteWorkout(ctx.user.id, input)),
+      update: protectedProcedure
+        .input(
+          z.object({
+            id: z.number().int().positive(),
+            name: z.string().trim().min(1).max(60),
+            caloriesBurned: z.number().min(0).max(5000),
+          })
+        )
+        .mutation(async ({ ctx, input }) => {
+          await db.updateFavoriteWorkout(ctx.user.id, input.id, {
+            name: input.name,
+            caloriesBurned: input.caloriesBurned,
+          });
+          return { success: true } as const;
+        }),
+      remove: protectedProcedure
+        .input(z.object({ id: z.number().int().positive() }))
+        .mutation(async ({ ctx, input }) => {
+          await db.deleteFavoriteWorkout(ctx.user.id, input.id);
+          return { success: true } as const;
+        }),
+    }),
   }),
 
   /* ============================== strength (筋トレ) ============================== */

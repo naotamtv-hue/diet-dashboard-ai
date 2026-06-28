@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { INTENSITY_LABELS, todayDateString } from "@/lib/labels";
 import { trpc } from "@/lib/trpc";
 import { workoutMotivation } from "@/lib/motivation";
-import { Dumbbell, Flame, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Dumbbell, Flame, Loader2, Pencil, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -40,11 +40,30 @@ export default function Workouts() {
   const [estimatedKcal, setEstimatedKcal] = useState<number | null>(null);
   const [estimateNote, setEstimateNote] = useState("");
 
+  // お気に入り登録フォーム
+  const [showSaveFav, setShowSaveFav] = useState(false);
+  const [favName, setFavName] = useState("");
+  const [favKcal, setFavKcal] = useState("");
+  // お気に入り編集
+  const [editFavId, setEditFavId] = useState<number | null>(null);
+  const [editFavName, setEditFavName] = useState("");
+  const [editFavKcal, setEditFavKcal] = useState("");
+
   const utils = trpc.useUtils();
   const listQ = trpc.workouts.listByDate.useQuery({ date });
+  const favQ = trpc.workouts.favorites.list.useQuery();
   const estimateM = trpc.workouts.estimateCalories.useMutation();
   const addM = trpc.workouts.add.useMutation({
     onSuccess: () => utils.workouts.listByDate.invalidate({ date }),
+  });
+  const favAddM = trpc.workouts.favorites.add.useMutation({
+    onSuccess: () => utils.workouts.favorites.list.invalidate(),
+  });
+  const favUpdateM = trpc.workouts.favorites.update.useMutation({
+    onSuccess: () => utils.workouts.favorites.list.invalidate(),
+  });
+  const favRemoveM = trpc.workouts.favorites.remove.useMutation({
+    onSuccess: () => utils.workouts.favorites.list.invalidate(),
   });
 
   // 入力が変わったら推定値はリセット（古い値を保存しないため）
@@ -111,6 +130,97 @@ export default function Workouts() {
     toast.success(`${workoutMotivation()}（消費 約${Math.round(kcal)}kcal）`, { duration: 4500 });
   };
 
+  // 現在の入力＋推定値をお気に入りに登録
+  const openSaveFav = () => {
+    if (!activity.trim()) {
+      toast.error("先に種目名を入力してください");
+      return;
+    }
+    setFavName(durationMin ? `${activity.trim()} ${durationMin}分` : activity.trim());
+    setFavKcal(estimatedKcal !== null ? String(Math.round(estimatedKcal)) : "");
+    setShowSaveFav(true);
+  };
+
+  const saveFav = async () => {
+    const kcal = Number(favKcal);
+    if (!favName.trim()) {
+      toast.error("お気に入りの名前を入力してください");
+      return;
+    }
+    if (!Number.isFinite(kcal) || kcal <= 0) {
+      toast.error("消費カロリーを入力してください");
+      return;
+    }
+    await favAddM.mutateAsync({
+      name: favName.trim(),
+      activity: activity.trim(),
+      durationMin: Number(durationMin) || 0,
+      intensity,
+      weightKg: weightKg ? Number(weightKg) : null,
+      reps: reps ? Number(reps) : null,
+      sets: sets ? Number(sets) : null,
+      incline,
+      caloriesBurned: kcal,
+    });
+    setShowSaveFav(false);
+    setFavName("");
+    setFavKcal("");
+    toast.success("お気に入りに登録しました ⭐");
+  };
+
+  // お気に入りをフォームに反映（A案：自分で確認して記録できる）
+  const applyFav = (f: NonNullable<typeof favQ.data>[number]) => {
+    setActivity(f.activity);
+    setIntensity(f.intensity);
+    setDurationMin(f.durationMin ? String(f.durationMin) : "");
+    setWeightKg(f.weightKg ? String(Number(f.weightKg)) : "");
+    setReps(f.reps != null ? String(f.reps) : "");
+    setSets(f.sets != null ? String(f.sets) : "");
+    setIncline(Boolean(f.incline));
+    // useEffect が推定値をリセットするので、保存済みのkcalを後から復元
+    setTimeout(() => {
+      setEstimatedKcal(Number(f.caloriesBurned));
+      setEstimateNote("お気に入りの保存値");
+    }, 0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.success(`「${f.name}」を入力に反映しました`);
+  };
+
+  // お気に入りを今日の記録に即追加
+  const recordFav = async (f: NonNullable<typeof favQ.data>[number]) => {
+    await addM.mutateAsync({
+      date,
+      activity: f.activity,
+      durationMin: f.durationMin ?? 0,
+      intensity: f.intensity,
+      weightKg: f.weightKg ? Number(f.weightKg) : null,
+      reps: f.reps ?? null,
+      sets: f.sets ?? null,
+      caloriesBurned: Number(f.caloriesBurned),
+      incline: Boolean(f.incline),
+      note: null,
+    });
+    toast.success(`「${f.name}」を記録（消費 約${Math.round(Number(f.caloriesBurned))}kcal）`, { duration: 4000 });
+  };
+
+  const startEditFav = (f: NonNullable<typeof favQ.data>[number]) => {
+    setEditFavId(f.id);
+    setEditFavName(f.name);
+    setEditFavKcal(String(Math.round(Number(f.caloriesBurned))));
+  };
+
+  const saveEditFav = async () => {
+    if (editFavId == null) return;
+    const kcal = Number(editFavKcal);
+    if (!editFavName.trim() || !Number.isFinite(kcal) || kcal <= 0) {
+      toast.error("名前と消費カロリーを正しく入力してください");
+      return;
+    }
+    await favUpdateM.mutateAsync({ id: editFavId, name: editFavName.trim(), caloriesBurned: kcal });
+    setEditFavId(null);
+    toast.success("お気に入りを更新しました");
+  };
+
   const totalKcal = (listQ.data ?? []).reduce((a, w) => a + Number(w.caloriesBurned ?? 0), 0);
   const totalMin = (listQ.data ?? []).reduce((a, w) => a + Number(w.durationMin ?? 0), 0);
 
@@ -136,6 +246,85 @@ export default function Workouts() {
           <span className="text-lg" style={{ color: "oklch(0.38 0.14 268)" }}>›</span>
         </button>
       </Link>
+
+      {/* お気に入りトレーニング（My Workouts） */}
+      <div className="rounded-xl px-4 py-4" style={CARD}>
+        <div className="flex items-center gap-2 section-label mb-3">
+          <Star className="h-3.5 w-3.5" />
+          お気に入りトレーニング
+        </div>
+        {(favQ.data ?? []).length === 0 ? (
+          <div className="text-[11px] text-muted-foreground leading-relaxed">
+            よく行う運動（例：ジム1時間）を消費カロリー付きで登録すると、ここからワンタップで呼び出し・記録できます。
+            下で「消費カロリーを計算」したあと「⭐ お気に入りに登録」から保存できます。
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {favQ.data!.map((f) => (
+              <div key={f.id} className="rounded-xl px-3 py-2.5" style={INNER}>
+                {editFavId === f.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editFavName}
+                      onChange={(e) => setEditFavName(e.target.value)}
+                      placeholder="名前"
+                      className="h-10"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        value={editFavKcal}
+                        onChange={(e) => setEditFavKcal(e.target.value)}
+                        placeholder="消費kcal"
+                        className="h-10 flex-1"
+                      />
+                      <span className="text-xs text-muted-foreground">kcal</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 h-9 rounded-lg" disabled={favUpdateM.isPending} onClick={saveEditFav}>
+                        保存
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-9 rounded-lg" onClick={() => setEditFavId(null)}>
+                        取消
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button className="flex-1 min-w-0 text-left" onClick={() => applyFav(f)}>
+                      <div className="text-sm font-semibold text-slate-900 truncate">{f.name}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        <strong style={{ color: "oklch(0.72 0.18 130)" }}>約{Math.round(Number(f.caloriesBurned))}</strong> kcal · タップで入力反映
+                      </div>
+                    </button>
+                    <button
+                      className="flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-bold flex-shrink-0"
+                      style={{ background: "oklch(0.72 0.18 155 / 0.15)", color: "oklch(0.72 0.18 130)" }}
+                      disabled={addM.isPending}
+                      onClick={() => recordFav(f)}
+                    >
+                      <Plus className="h-3.5 w-3.5" />記録
+                    </button>
+                    <button
+                      className="tap-target text-muted-foreground hover:text-slate-900 flex-shrink-0"
+                      onClick={() => startEditFav(f)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="tap-target text-muted-foreground hover:text-destructive flex-shrink-0"
+                      onClick={() => favRemoveM.mutate({ id: f.id })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* 入力フォーム */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
@@ -238,6 +427,43 @@ export default function Workouts() {
                 <span className="text-sm text-muted-foreground">kcal 消費（推定）</span>
               </div>
               {estimateNote && <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{estimateNote}</div>}
+              {!showSaveFav && (
+                <button
+                  className="mt-2 flex items-center gap-1.5 text-xs font-bold"
+                  style={{ color: "oklch(0.72 0.18 130)" }}
+                  onClick={openSaveFav}
+                >
+                  <Star className="h-3.5 w-3.5" />お気に入りに登録
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* お気に入り登録フォーム */}
+          {showSaveFav && (
+            <div className="rounded-xl px-4 py-3 space-y-2" style={INNER}>
+              <div className="flex items-center justify-between">
+                <span className="section-label">お気に入りに登録</span>
+                <button className="text-muted-foreground" onClick={() => setShowSaveFav(false)}>
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <Input value={favName} onChange={(e) => setFavName(e.target.value)} placeholder="例: ジム1時間" className="h-10" />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={favKcal}
+                  onChange={(e) => setFavKcal(e.target.value)}
+                  placeholder="消費kcal（自分で調整可）"
+                  className="h-10 flex-1"
+                />
+                <span className="text-xs text-muted-foreground">kcal</span>
+              </div>
+              <Button className="w-full h-10 rounded-lg font-bold" disabled={favAddM.isPending} onClick={saveFav}>
+                {favAddM.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Star className="h-4 w-4 mr-2" />}
+                保存する
+              </Button>
             </div>
           )}
         </div>

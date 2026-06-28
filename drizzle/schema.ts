@@ -105,6 +105,36 @@ export type Workout = typeof workouts.$inferSelect;
 export type InsertWorkout = typeof workouts.$inferInsert;
 
 /**
+ * お気に入りトレーニング（My Workouts）。
+ * 「ジム1時間で約450kcal」のように、よく行う運動の組み合わせと
+ * 自分でカスタムした消費カロリーを保存し、ワンタップで呼び出し／記録する。
+ * caloriesBurned はユーザーがAI推定値から微調整できる値（text列で統一）。
+ */
+export const favoriteWorkouts = sqliteTable(
+  "favorite_workouts",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("userId").notNull(),
+    name: text("name").notNull(),
+    activity: text("activity").notNull(),
+    durationMin: integer("durationMin").notNull().default(0),
+    intensity: text("intensity", { enum: ["low", "medium", "high"] }).notNull().default("medium"),
+    weightKg: text("weightKg"),
+    reps: integer("reps"),
+    sets: integer("sets"),
+    incline: integer("incline", { mode: "boolean" }).notNull().default(false),
+    caloriesBurned: text("caloriesBurned").notNull().default("0"),
+    createdAt: ts("createdAt"),
+  },
+  (t) => ({
+    userIdx: index("favorite_workouts_user_idx").on(t.userId),
+  })
+);
+
+export type FavoriteWorkout = typeof favoriteWorkouts.$inferSelect;
+export type InsertFavoriteWorkout = typeof favoriteWorkouts.$inferInsert;
+
+/**
  * 目標設定テーブル（ユーザーごとに最新1件のみ運用）
  * gender: male / female
  * activityLevel:
