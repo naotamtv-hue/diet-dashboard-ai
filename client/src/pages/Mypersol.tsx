@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { TrainerAvatar } from "@/components/TrainerAvatar";
 import { trpc } from "@/lib/trpc";
-import { TRAINERS, TRAINER_GROUPS, getTrainerInfo, type TrainerInfo } from "@/lib/trainers";
+import { TRAINERS, TRAINER_GROUPS, getTrainerInfo, type TrainerId, type TrainerInfo } from "@/lib/trainers";
 import { formatDate } from "@/lib/labels";
-import { Check, Flame, Loader2, Salad, ShieldCheck, Sparkles, TrendingDown, Utensils } from "lucide-react";
+import { Check, ChevronRight, Flame, HeartHandshake, Loader2, Salad, ShieldCheck, Sparkles, Target, TrendingDown, Utensils, UtensilsCrossed, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -19,18 +20,6 @@ type Advice = {
   warning: string;
 };
 
-// アバター（画像未配置の間は頭文字＋アクセント色の円で表示）
-function TrainerAvatar({ t, size = 56 }: { t: TrainerInfo; size?: number }) {
-  return (
-    <div
-      className="rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
-      style={{ width: size, height: size, background: t.accent, fontSize: size * 0.4 }}
-    >
-      {t.name.slice(0, 1)}
-    </div>
-  );
-}
-
 export default function Mypersol() {
   const utils = trpc.useUtils();
   const coachQ = trpc.mypersol.getCoach.useQuery();
@@ -44,13 +33,16 @@ export default function Mypersol() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [detailId, setDetailId] = useState<TrainerId | null>(null);
   const coachId = coachQ.data ?? null;
   const trainer = getTrainerInfo(coachId);
+  const detailTrainer = detailId ? getTrainerInfo(detailId) : null;
   const a = analysisQ.data;
 
-  const selectCoach = (id: TrainerInfo["id"]) => {
+  const selectCoach = (id: TrainerId) => {
     setAdvice(null);
     setCoachM.mutate({ coachId: id });
+    setDetailId(null);
   };
 
   return (
@@ -64,9 +56,12 @@ export default function Mypersol() {
 
       {/* トレーナー選択 */}
       <div className="rounded-xl px-4 py-4" style={CARD}>
-        <div className="flex items-center gap-2 section-label mb-3">
-          <Sparkles className="h-3.5 w-3.5" />
-          トレーナーを選ぶ
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 section-label">
+            <Sparkles className="h-3.5 w-3.5" />
+            トレーナーを選ぶ
+          </div>
+          <span className="text-[10px] text-muted-foreground">タップで詳細</span>
         </div>
         <div className="space-y-3">
           {TRAINER_GROUPS.map((g) => (
@@ -79,15 +74,15 @@ export default function Mypersol() {
                   return (
                     <button
                       key={t.id}
-                      onClick={() => selectCoach(t.id)}
-                      className="rounded-xl px-3 py-2.5 flex items-center gap-2 text-left transition-all"
+                      onClick={() => setDetailId(t.id)}
+                      className="rounded-xl px-3 py-2.5 flex items-center gap-2 text-left transition-all relative"
                       style={
                         active
                           ? { background: "oklch(0.965 0.004 250)", border: `2px solid ${t.accent}` }
                           : INNER
                       }
                     >
-                      <TrainerAvatar t={t} size={40} />
+                      <TrainerAvatar id={t.id} size={40} />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
                           {t.name}
@@ -95,6 +90,7 @@ export default function Mypersol() {
                         </div>
                         <div className="text-[10px] text-muted-foreground leading-tight">{t.tagline}</div>
                       </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     </button>
                   );
                 })}
@@ -204,7 +200,7 @@ export default function Mypersol() {
           <div className="text-[11px] text-muted-foreground">まずは上でトレーナーを選んでください。</div>
         ) : !advice ? (
           <div className="flex items-center gap-3">
-            <TrainerAvatar t={trainer} size={48} />
+            <TrainerAvatar id={trainer.id} size={48} />
             <div className="flex-1 min-w-0">
               <div className="text-xs text-muted-foreground leading-relaxed mb-2">
                 今のデータをもとに、{trainer.name}が食事の改善とペースの巻き上げを具体的に指導します。
@@ -226,7 +222,7 @@ export default function Mypersol() {
         ) : (
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <TrainerAvatar t={trainer} size={44} />
+              <TrainerAvatar id={trainer.id} size={44} />
               <div className="flex-1 min-w-0 rounded-xl px-3 py-2.5" style={INNER}>
                 <div className="text-sm text-slate-900 leading-relaxed">{advice.summary}</div>
               </div>
@@ -284,6 +280,84 @@ export default function Mypersol() {
           リバウンド防止のため、減量は週あたり体重の約1%・月およそ4kgまでを上限に、高タンパクで筋肉を守る現実的なプランのみ提案します。1ヶ月−10kgのような無理は出しません。
         </div>
       </div>
+
+      {/* トレーナー詳細モーダル */}
+      {detailTrainer && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+          onClick={() => setDetailId(null)}
+        >
+          <div className="absolute inset-0" style={{ background: "oklch(0 0 0 / 0.45)" }} />
+          <div
+            className="relative w-full sm:max-w-md max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
+            style={{ background: "white", paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute right-4 top-4 text-muted-foreground tap-target"
+              onClick={() => setDetailId(null)}
+              aria-label="閉じる"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-3 pr-8">
+              <TrainerAvatar id={detailTrainer.id} size={64} />
+              <div className="min-w-0">
+                <div className="text-xl font-bold text-slate-900">{detailTrainer.name}</div>
+                <div className="text-[11px] text-muted-foreground">{detailTrainer.group}</div>
+              </div>
+            </div>
+
+            <div
+              className="rounded-xl px-4 py-3 text-sm font-bold text-slate-900"
+              style={{ background: detailTrainer.accent.replace(/\)\s*$/, " / 0.12)") }}
+            >
+              {detailTrainer.catch}
+            </div>
+
+            <DetailRow icon={<Sparkles className="h-4 w-4" />} accent={detailTrainer.accent} title="どんなトレーナー？" text={detailTrainer.summary} />
+            <DetailRow icon={<HeartHandshake className="h-4 w-4" />} accent={detailTrainer.accent} title="こんな人にピッタリ" text={detailTrainer.forWho} />
+            <DetailRow icon={<UtensilsCrossed className="h-4 w-4" />} accent={detailTrainer.accent} title="食事のすすめ方" text={detailTrainer.how} />
+            <DetailRow icon={<Target className="h-4 w-4" />} accent={detailTrainer.accent} title="目指す体・ペース" text={detailTrainer.pace} />
+
+            <div className="rounded-xl px-3 py-2.5 flex items-start gap-2" style={INNER}>
+              <ShieldCheck className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: GREEN }} />
+              <div className="text-[10px] text-muted-foreground leading-relaxed">
+                どのトレーナーも、体をこわす無理な減量（1ヶ月−10kgなど）はしません。安全な範囲（週は体重の約1%・月およそ4kgまで）で、筋肉を守りながら進めます。
+              </div>
+            </div>
+
+            {coachId === detailTrainer.id ? (
+              <div className="text-center text-sm font-bold py-2" style={{ color: detailTrainer.accent }}>
+                ✓ いま選んでいるトレーナーです
+              </div>
+            ) : (
+              <Button
+                className="w-full h-12 rounded-xl font-bold"
+                style={{ background: detailTrainer.accent }}
+                disabled={setCoachM.isPending}
+                onClick={() => selectCoach(detailTrainer.id)}
+              >
+                {setCoachM.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                このトレーナーにする
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailRow({ icon, accent, title, text }: { icon: React.ReactNode; accent: string; title: string; text: string }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-1 text-sm font-bold text-slate-900">
+        <span style={{ color: accent }}>{icon}</span>
+        {title}
+      </div>
+      <div className="text-[13px] text-slate-700 leading-relaxed">{text}</div>
     </div>
   );
 }

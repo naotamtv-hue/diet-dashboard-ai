@@ -68,7 +68,7 @@ const MORE_NAV = [
   { path: "/calendar",    label: "カレンダー", icon: CalendarDays },
   { path: "/photos",      label: "体型写真",  icon: Camera },
   { path: "/goal",        label: "目標設定",  icon: Target },
-  { path: "/settings",    label: "通知設定",  icon: Bell },
+  { path: "/settings",    label: "設定",  icon: Bell },
 ];
 
 const ALL_NAV = [
