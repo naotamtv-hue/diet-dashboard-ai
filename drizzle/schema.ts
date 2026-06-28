@@ -20,6 +20,8 @@ export const users = sqliteTable("users", {
   passwordHash: text("passwordHash"),
   loginMethod: text("loginMethod"),
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+  // Apple ショートカット等の外部連携用の個人トークン（消費カロリー取り込みURLに含める）
+  apiToken: text("apiToken"),
   createdAt: ts("createdAt"),
   updatedAt: ts("updatedAt").$onUpdate(() => new Date()),
   lastSignedIn: ts("lastSignedIn"),

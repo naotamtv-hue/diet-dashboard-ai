@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
-import { Bell, KeyRound, Loader2, LogOut, ShieldCheck } from "lucide-react";
+import { Bell, Copy, KeyRound, Loader2, LogOut, RefreshCw, ShieldCheck, Watch } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -101,6 +101,9 @@ export default function Settings() {
 
       {/* パスワード変更 */}
       <PasswordChangeCard />
+
+      {/* Apple Watch 連携 */}
+      <AppleWatchCard />
 
       {/* 通知リマインダー */}
       <div className="rounded-xl px-4 py-4 space-y-4" style={CARD}>
@@ -239,6 +242,85 @@ function PasswordChangeCard() {
         {m.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
         パスワードを変更
       </Button>
+    </div>
+  );
+}
+
+/* ── Apple Watch 連携（ショートカットで消費カロリーを自動取り込み）── */
+function AppleWatchCard() {
+  const tokenQ = trpc.integrations.getToken.useQuery();
+  const utils = trpc.useUtils();
+  const regenM = trpc.integrations.regenerateToken.useMutation({
+    onSuccess: () => {
+      utils.integrations.getToken.invalidate();
+      toast.success("URLを作り直しました。古いURLは無効になりました。");
+    },
+  });
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const token = tokenQ.data?.token ?? "";
+  const baseUrl = token ? `${origin}/api/health/active-energy?token=${token}` : "";
+
+  const copy = async () => {
+    if (!baseUrl) return;
+    try {
+      await navigator.clipboard.writeText(baseUrl);
+      toast.success("URLをコピーしました");
+    } catch {
+      toast.error("コピーに失敗しました。長押しで選択してください。");
+    }
+  };
+
+  return (
+    <div className="rounded-xl px-4 py-4 space-y-3" style={CARD}>
+      <div className="flex items-center gap-2 section-label">
+        <Watch className="h-3.5 w-3.5" />
+        Apple Watch 連携
+      </div>
+
+      <div
+        className="rounded-xl px-4 py-3 text-xs text-muted-foreground leading-relaxed"
+        style={{ background: "oklch(0.62 0.18 220 / 0.08)", border: "1px solid oklch(0.58 0.19 254 / 0.12)" }}
+      >
+        iPhoneの「ショートカット」アプリから、Apple Watchのアクティブエネルギー（消費kcal）をKalonに自動で記録できます。
+        下のあなた専用URLを使います。<span className="font-semibold text-slate-900">トークンが含まれるので他人に共有しないでください。</span>
+      </div>
+
+      {/* 専用URL */}
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">あなた専用の取り込みURL</Label>
+        <div className="rounded-lg px-3 py-2.5 break-all text-[11px] text-slate-900" style={INNER}>
+          {tokenQ.isLoading ? "読み込み中…" : baseUrl}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="h-10 flex-1 rounded-lg text-xs" disabled={!baseUrl} onClick={copy}>
+            <Copy className="h-3.5 w-3.5 mr-1.5" />URLをコピー
+          </Button>
+          <Button
+            variant="outline"
+            className="h-10 rounded-lg text-xs"
+            disabled={regenM.isPending}
+            onClick={() => regenM.mutate()}
+          >
+            {regenM.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* 使い方 */}
+      <div className="rounded-xl px-4 py-3 space-y-1.5" style={INNER}>
+        <div className="text-xs font-bold text-slate-900">使い方（ショートカット作成）</div>
+        <ol className="text-[11px] text-muted-foreground leading-relaxed list-decimal pl-4 space-y-1">
+          <li>iPhoneの「ショートカット」アプリ →「+」で新規作成</li>
+          <li>アクション「ヘルスケアのサンプルを検索」を追加 → 種類＝<span className="font-semibold text-slate-900">アクティブエネルギー</span>、期間＝<span className="font-semibold text-slate-900">今日</span>、集計＝<span className="font-semibold text-slate-900">合計</span></li>
+          <li>アクション「URLの内容を取得」を追加 → URL欄に上のURLを貼り、末尾に <span className="font-semibold text-slate-900">&kcal=</span> を打ってから手順2の結果（合計）を続ける</li>
+          <li>実行して「記録しました」が返ればOK（ホームの消費kcalに反映）</li>
+          <li>「オートメーション」で毎晩◯時に自動実行にすると、手動操作なしで毎日入ります</li>
+        </ol>
+        <div className="text-[10px] text-muted-foreground pt-1">
+          ※ 同じ日に何度送っても上書きされ、二重計上にはなりません。日付を指定したい場合はURL末尾に &date=2026-06-29 を付けます。
+        </div>
+      </div>
     </div>
   );
 }

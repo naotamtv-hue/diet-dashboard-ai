@@ -215,6 +215,19 @@ export const appRouter = router({
       }),
   }),
 
+  /* ============================== integrations (Apple ショートカット連携) ============================== */
+  integrations: router({
+    // 連携トークンを取得（無ければ生成）。Apple Watchの消費kcal取り込みURLに使う。
+    getToken: protectedProcedure.query(async ({ ctx }) => {
+      const token = await db.ensureApiToken(ctx.user.id);
+      return { token } as const;
+    }),
+    regenerateToken: protectedProcedure.mutation(async ({ ctx }) => {
+      const token = await db.regenerateApiToken(ctx.user.id);
+      return { token } as const;
+    }),
+  }),
+
   /* ============================== meals ============================== */
   meals: router({
     listByDate: protectedProcedure

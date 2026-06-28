@@ -1,6 +1,7 @@
 import { and, asc, between, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
+import { randomBytes } from "node:crypto";
 import {
   bodyPhotos,
   convenienceItems,
@@ -140,6 +141,61 @@ export async function setUserPassword(userId: number, passwordHash: string, name
     .where(eq(users.id, userId))
     .returning();
   return r[0] ?? null;
+}
+
+/* ============================== external integration token ============================== */
+
+/** ユーザーの連携トークンを取得（無ければ生成して保存）。Apple ショートカット連携用。 */
+export async function ensureApiToken(userId: number): Promise<string> {
+  const db = await requireDb();
+  const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const current = rows[0]?.apiToken;
+  if (current) return current;
+  const token = randomBytes(24).toString("base64url");
+  await db.update(users).set({ apiToken: token }).where(eq(users.id, userId));
+  return token;
+}
+
+/** トークンを作り直す（漏洩時など）。 */
+export async function regenerateApiToken(userId: number): Promise<string> {
+  const db = await requireDb();
+  const token = randomBytes(24).toString("base64url");
+  await db.update(users).set({ apiToken: token }).where(eq(users.id, userId));
+  return token;
+}
+
+export async function getUserByApiToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.apiToken, token)).limit(1);
+  return result[0] ?? null;
+}
+
+/**
+ * Apple Watch のアクティブエネルギーを記録。1日1件に正規化（同日同種目は入れ替え）。
+ * activity は ACTIVE_ENERGY_LABEL 固定で、再送信しても重複せず最新値で上書きされる。
+ */
+export const ACTIVE_ENERGY_LABEL = "アクティブエネルギー (Apple Watch)";
+export async function upsertActiveEnergyWorkout(userId: number, recordDate: string, kcal: number) {
+  const db = await requireDb();
+  await db
+    .delete(workouts)
+    .where(
+      and(
+        eq(workouts.userId, userId),
+        eq(workouts.recordDate, recordDate),
+        eq(workouts.activity, ACTIVE_ENERGY_LABEL)
+      )
+    );
+  await db.insert(workouts).values({
+    userId,
+    recordDate,
+    activity: ACTIVE_ENERGY_LABEL,
+    durationMin: 0,
+    intensity: "medium",
+    caloriesBurned: String(Math.max(0, Math.round(kcal))),
+    note: "Apple ショートカット連携",
+  });
 }
 
 /* ============================== meals ============================== */

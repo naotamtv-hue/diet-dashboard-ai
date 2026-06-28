@@ -38,8 +38,9 @@ async function run() {
         await client.execute(stmt);
         applied += 1;
       } catch (e) {
-        // 既に存在するテーブル/インデックスは冪等にスキップ
-        if (/already exists/i.test(String(e?.message))) {
+        // 既に存在するテーブル/インデックス/カラムは冪等にスキップ
+        const msg = String(e?.message);
+        if (/already exists/i.test(msg) || /duplicate column name/i.test(msg)) {
           skipped += 1;
           continue;
         }
