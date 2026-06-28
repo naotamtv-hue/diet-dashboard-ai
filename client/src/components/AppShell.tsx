@@ -26,6 +26,7 @@ import {
   LayoutGrid,
   Plus,
   Scale,
+  Salad,
   X,
 } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
@@ -42,9 +43,9 @@ import { useReminderScheduler } from "@/hooks/useReminderScheduler";
 ───────────────────────────────────────────── */
 // MyFitnessPal風ボトムナビ: ホーム / 日記 / 中央＋ / 進捗 / その他
 const BOTTOM_NAV = [
-  { path: "/",        label: "ホーム", icon: Home },
-  { path: "/meals",   label: "日記",   icon: BookOpen },
-  { path: "/weight",  label: "進捗",   icon: TrendingUp },
+  { path: "/",         label: "ホーム", icon: Home },
+  { path: "/meals",    label: "日記",   icon: BookOpen },
+  { path: "/mypersol", label: "MYPERSOL", icon: Salad },
 ];
 
 // 中央＋のクイック追加メニュー
@@ -57,6 +58,8 @@ const QUICK_ADD = [
 
 // 「その他」シートに並べる全機能
 const MORE_NAV = [
+  { path: "/mypersol",    label: "MYPERSOL", icon: Salad },
+  { path: "/weight",      label: "進捗（体重）", icon: TrendingUp },
   { path: "/trainer",     label: "AI食事トレーナー", icon: UtensilsCrossed },
   { path: "/coach",       label: "AIパーソナルトレーナー", icon: Sparkles },
   { path: "/workouts",    label: "運動",     icon: Dumbbell },

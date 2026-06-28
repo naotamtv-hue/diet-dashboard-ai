@@ -9,6 +9,7 @@ import Convenience from "@/pages/Convenience";
 import Dashboard from "@/pages/Dashboard";
 import Goal from "@/pages/Goal";
 import Meals from "@/pages/Meals";
+import Mypersol from "@/pages/Mypersol";
 import NotFound from "@/pages/NotFound";
 import Photos from "@/pages/Photos";
 import Settings from "@/pages/Settings";
@@ -23,6 +24,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/mypersol" component={Mypersol} />
       <Route path="/meals" component={Meals} />
       <Route path="/weight" component={Weight} />
       <Route path="/workouts" component={Workouts} />

@@ -22,6 +22,8 @@ export const users = sqliteTable("users", {
   role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
   // Apple ショートカット等の外部連携用の個人トークン（消費カロリー取り込みURLに含める）
   apiToken: text("apiToken"),
+  // MYPERSOL で選んだトレーナー（jeff/gina/michael/mia/jerry/gemma）
+  coachId: text("coachId"),
   createdAt: ts("createdAt"),
   updatedAt: ts("updatedAt").$onUpdate(() => new Date()),
   lastSignedIn: ts("lastSignedIn"),

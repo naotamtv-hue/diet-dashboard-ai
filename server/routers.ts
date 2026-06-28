@@ -11,7 +11,8 @@ import type { TrpcContext } from "./_core/context";
 import type { User } from "../drizzle/schema";
 import { BODY_PARTS } from "../drizzle/schema";
 import * as db from "./db";
-import { analyzeMealImage, analyzePackageImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo } from "./ai";
+import { analyzeMealImage, analyzePackageImage, estimateMealByName, buildTrainerPlan, buildDailyAdvice, buildMealPlan, estimateWorkoutCalories, suggestConvenienceCombo, buildMypersolAdvice } from "./ai";
+import { computeMypersolAnalysis, TRAINERS, getTrainer } from "./mypersol";
 import { buildPlan, suggestPfcTargets } from "./nutrition";
 import { searchBasicFoods } from "./basic-foods";
 
@@ -982,6 +983,66 @@ export const appRouter = router({
           hasInjury: input.hasInjury,
         });
       }),
+  }),
+
+  /* ============================== MYPERSOL（AI食事コーチ・メイン機能）============================== */
+  mypersol: router({
+    // 6名のトレーナー一覧（表示はクライアントのlib/trainersと突き合わせ）
+    trainers: publicProcedure.query(() =>
+      TRAINERS.map((t) => ({ id: t.id, name: t.name, gender: t.gender, purpose: t.purpose }))
+    ),
+    getCoach: protectedProcedure.query(({ ctx }) => db.getUserCoach(ctx.user.id)),
+    setCoach: protectedProcedure
+      .input(z.object({ coachId: z.enum(["jeff", "gina", "michael", "mia", "jerry", "gemma"]) }))
+      .mutation(async ({ ctx, input }) => {
+        await db.setUserCoach(ctx.user.id, input.coachId);
+        return { success: true } as const;
+      }),
+    // 根拠つきの現状分析・予測（AIを使わない決定論計算・回数制限なし）
+    analysis: protectedProcedure.query(({ ctx }) => computeMypersolAnalysis(ctx.user.id)),
+    // AIによる食事コーチング（栄養法則＋選択トレーナーの人格・安全ガード）。AI回数ガードあり。
+    advice: protectedProcedure.mutation(async ({ ctx }) => {
+      const goal = await db.getGoal(ctx.user.id);
+      if (!goal) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "先に目標を設定してください" });
+      }
+      const analysis = await computeMypersolAnalysis(ctx.user.id);
+      if (!analysis.dataReady) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: analysis.reason || "食事を数日記録するとアドバイスできます" });
+      }
+      const coachId = await db.getUserCoach(ctx.user.id);
+      const trainer = getTrainer(coachId);
+      const usageDay = await checkAiQuota(ctx.user.id);
+      await db.incrementAiUsage(ctx.user.id, usageDay);
+      const advice = await buildMypersolAdvice({
+        trainerName: trainer.name,
+        trainerStyle: trainer.style,
+        goalPurpose: trainer.purpose,
+        safety: { maxWeeklyLossKg: analysis.maxWeeklyLossKg, calorieFloor: analysis.calorieFloor },
+        numbers: {
+          直近平均摂取kcal: analysis.avgIntake,
+          維持カロリーTDEE: analysis.tdee,
+          運動平均消費kcal_per_day: analysis.avgBurn,
+          一日のカロリー収支_赤字が正: analysis.dailyDeficit,
+          平均タンパク質g: analysis.avgProteinG,
+          推奨タンパク質g: analysis.targetProteinG,
+          平均脂質g: analysis.avgFatG,
+          平均炭水化物g: analysis.avgCarbsG,
+          週ペース_収支kg: analysis.perWeekBalance,
+          週ペース_実測kg: analysis.perWeekMeasured,
+          週ペース_総合kg: analysis.perWeekBlended,
+          現在体重kg: analysis.currentWeight,
+          目標体重kg: analysis.targetWeight,
+          目標日: analysis.targetDate,
+          目標日まで日数: analysis.daysToTarget,
+          目標日の予測体重kg: analysis.projAtTarget,
+          目標日に必要な週ペースkg: analysis.requiredWeeklyRate,
+          安全な週減量上限kg: analysis.maxWeeklyLossKg,
+          摂取カロリー下限kcal: analysis.calorieFloor,
+        },
+      });
+      return { advice, analysis } as const;
+    }),
   }),
 
   /* ============================== bodyPhotos ============================== */

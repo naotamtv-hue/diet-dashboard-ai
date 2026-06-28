@@ -716,3 +716,103 @@ ${TRAINER_KNOWLEDGE_BRIEF}
   const content = data?.choices?.[0]?.message?.content ?? "";
   return String(content).trim().replace(/^["「』]+|["」』]+$/g, "");
 }
+
+export type MypersolAdvice = {
+  summary: string;
+  todayAdvice: string;
+  foodImprovements: { title: string; detail: string }[];
+  paceVerdict: string;
+  warning: string;
+};
+
+/**
+ * MYPERSOL のメインAI食事コーチ。
+ * 実データ（摂取・消費・PFC・体重トレンド・カロリー収支）と栄養学の法則、
+ * 選択トレーナーの人格に基づいて、根拠あるアドバイスと安全な巻き上げ策を返す。
+ * 数値の予測自体はクライアントの決定論計算で出すので、ここは「解釈と具体策」に集中する。
+ */
+export async function buildMypersolAdvice(context: {
+  trainerName: string;
+  trainerStyle: string; // 人格・口調・専門性の説明
+  goalPurpose: string; // 減量/健康的に絞る/増量 など
+  numbers: Record<string, number | string | null>;
+  safety: { maxWeeklyLossKg: number; calorieFloor: number };
+}): Promise<MypersolAdvice> {
+  const system = `あなたは「${context.trainerName}」という名前の一流パーソナルトレーナー兼スポーツ栄養コーチです。
+人格と方針: ${context.trainerStyle}
+担当の目的: ${context.goalPurpose}
+
+次の食事管理ナレッジに厳密に従ってください。
+${TRAINER_NUTRITION_KNOWLEDGE}
+
+【安全の絶対ルール】
+- 減量ペースは週 ${context.safety.maxWeeklyLossKg}kg を超える提案を絶対にしない（1ヶ月-10kgのような無理は厳禁。リバウンドと筋肉減・代謝低下の元）。
+- 摂取カロリーは1日 ${context.safety.calorieFloor}kcal を下回る提案をしない。
+- 「もっと速く」を求められても、安全枠を超える分は出さず「ここまでが健康的な上限」と明示する。
+- 提案は実在する一般的な食材・市販/コンビニ商品で具体的に（架空の商品名は使わない）。
+
+渡されたユーザーの実数値（直近の平均摂取・消費(TDEE+運動)・カロリー収支・PFCの過不足・体重トレンド・目標と目標日・予測体重）を読み、
+あなたの人格と口調で、根拠（数字）に触れながら具体的に指導してください。テキトーな精神論は禁止、必ず数字と栄養法則に紐づけること。
+
+出力はJSONのみ:
+{
+ "summary": "現状を数字根拠つきで1〜2文（例: 1日約1180kcalの赤字で週1.0kg減ペース。Pが不足気味）",
+ "todayAdvice": "今日の具体行動を人格の口調で1〜2文（何をどう食べる/替えるか）",
+ "foodImprovements": [{"title":"短い見出し","detail":"具体策。食材/量/PFCへの効果を数字で"}],
+ "paceVerdict": "目標日に間に合うかの判定＋安全範囲での巻き上げ一手（例: 今のペースでOK。あと-150kcal/日で◯日前倒し可。安全枠内）",
+ "warning": "無理なペースや栄養の偏りがある時だけ注意を書く。問題なければ空文字"
+}
+foodImprovements は2〜4個。日本語。`;
+
+  const payload = {
+    model: AI_MODEL,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: JSON.stringify(context.numbers) },
+    ],
+    max_tokens: 1100,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "mypersol_advice",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            summary: { type: "string" },
+            todayAdvice: { type: "string" },
+            foodImprovements: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: { title: { type: "string" }, detail: { type: "string" } },
+                required: ["title", "detail"],
+              },
+            },
+            paceVerdict: { type: "string" },
+            warning: { type: "string" },
+          },
+          required: ["summary", "todayAdvice", "foodImprovements", "paceVerdict", "warning"],
+        },
+      },
+    },
+  };
+  const data = await chat(payload);
+  const content = data?.choices?.[0]?.message?.content ?? "";
+  try {
+    const parsed = typeof content === "string" ? JSON.parse(content) : content;
+    return {
+      summary: String(parsed.summary ?? ""),
+      todayAdvice: String(parsed.todayAdvice ?? ""),
+      foodImprovements: Array.isArray(parsed.foodImprovements)
+        ? parsed.foodImprovements.slice(0, 4).map((f: any) => ({ title: String(f.title ?? ""), detail: String(f.detail ?? "") }))
+        : [],
+      paceVerdict: String(parsed.paceVerdict ?? ""),
+      warning: String(parsed.warning ?? ""),
+    };
+  } catch {
+    throw new Error("MYPERSOLアドバイスの生成に失敗しました");
+  }
+}

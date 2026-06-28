@@ -164,6 +164,18 @@ export async function regenerateApiToken(userId: number): Promise<string> {
   return token;
 }
 
+/** MYPERSOLで選択中のトレーナーIDを取得。 */
+export async function getUserCoach(userId: number): Promise<string | null> {
+  const db = await requireDb();
+  const r = await db.select({ coachId: users.coachId }).from(users).where(eq(users.id, userId)).limit(1);
+  return r[0]?.coachId ?? null;
+}
+
+export async function setUserCoach(userId: number, coachId: string) {
+  const db = await requireDb();
+  await db.update(users).set({ coachId }).where(eq(users.id, userId));
+}
+
 export async function getUserByApiToken(token: string) {
   const db = await getDb();
   if (!db) return null;
@@ -281,6 +293,42 @@ export async function listMealSummariesByMonth(userId: number, yearMonth: string
   }
 
   return Array.from(map.entries()).map(([date, totals]) => ({ date, ...totals }));
+}
+
+/** 期間内の食事を日付ごとに集計（startDate〜endDate 含む）。MYPERSOLの平均摂取算出用。 */
+export async function listMealDailyBetween(userId: number, startDate: string, endDate: string) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(meals)
+    .where(and(eq(meals.userId, userId), gte(meals.mealDate, startDate), lte(meals.mealDate, endDate)));
+  const map = new Map<string, { calories: number; proteinG: number; fatG: number; carbsG: number }>();
+  for (const r of rows) {
+    const d = r.mealDate as string;
+    const cur = map.get(d) ?? { calories: 0, proteinG: 0, fatG: 0, carbsG: 0 };
+    cur.calories += Number(r.calories);
+    cur.proteinG += Number(r.proteinG);
+    cur.fatG += Number(r.fatG);
+    cur.carbsG += Number(r.carbsG);
+    map.set(d, cur);
+  }
+  return Array.from(map.entries()).map(([date, t]) => ({ date, ...t }));
+}
+
+/** 期間内の運動消費kcalの合計（startDate〜endDate 含む）。 */
+export async function sumWorkoutBurnBetween(userId: number, startDate: string, endDate: string) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(workouts)
+    .where(and(eq(workouts.userId, userId), gte(workouts.recordDate, startDate), lte(workouts.recordDate, endDate)));
+  let total = 0;
+  const days = new Set<string>();
+  for (const r of rows) {
+    total += Number(r.caloriesBurned ?? 0);
+    days.add(r.recordDate as string);
+  }
+  return { total, daysWithWorkout: days.size };
 }
 
 /* ============================== weights ============================== */
